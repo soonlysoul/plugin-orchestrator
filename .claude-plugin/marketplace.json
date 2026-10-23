@@ -1,0 +1,14 @@
+{
+  "name": "plugin-orchestrator",
+  "description": "Local marketplace for the plugin-orchestrator Claude Code plugin.",
+  "owner": {
+    "name": "Soon"
+  },
+  "plugins": [
+    {
+      "name": "plugin-orchestrator",
+      "source": "./",
+      "description": "Drives a software project from zero to delivery through project-level documents, shared Git, GitHub, TDD, recovery and debugging workflows, and multi-part coordination, delegating all language-specific work to the specialized plugins."
+    }
+  ]
+}

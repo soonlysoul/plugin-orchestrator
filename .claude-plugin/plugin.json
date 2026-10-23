@@ -1,0 +1,11 @@
+{
+  "name": "plugin-orchestrator",
+  "version": "0.1.0",
+  "description": "Drives a software project from zero to delivery through project-level documents, shared Git, GitHub, TDD, recovery and debugging workflows, and multi-part coordination, delegating all language-specific work to the specialized plugins.",
+  "author": {
+    "name": "Soon"
+  },
+  "homepage": "https://github.com/soonlysoul/plugin-orchestrator",
+  "repository": "https://github.com/soonlysoul/plugin-orchestrator",
+  "license": "MIT"
+}
