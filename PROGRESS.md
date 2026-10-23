@@ -5,7 +5,7 @@ Reprise : lire ce fichier, puis `git log --oneline`.
 
 ## État courant
 
-Charpente posée par plugin-plugin le 2026-10-23, à partir du cadrage approuvé (`docs/PRD.md`, `docs/ARCHITECTURE.md`). Quatre hooks ajoutés le 2026-10-23 : `guard-destructive`, `secret-scan`, `protect-sensitive` (US-13) et `checkpoint-reminder` (US-6, US-13), avec le lexer partagé `hooks/scripts/lib/shell-lexer.sh` repris de plugin-flutter. Prochaine étape : les deux hooks restants de la v0.1 (`agent-scope-guard`, `doc-status-guard`), par `/plugin-plugin:add`.
+Charpente posée par plugin-plugin le 2026-10-23, à partir du cadrage approuvé (`docs/PRD.md`, `docs/ARCHITECTURE.md`). Cinq hooks ajoutés le 2026-10-23 : `guard-destructive`, `secret-scan`, `protect-sensitive` (US-13), `checkpoint-reminder` (US-6, US-13) et `agent-scope-guard` (US-2, US-8, US-10), avec le lexer partagé `hooks/scripts/lib/shell-lexer.sh` repris de plugin-flutter. Prochaine étape : le dernier hook de la v0.1 (`doc-status-guard`), par `/plugin-plugin:add`.
 
 ## Composants
 
@@ -16,6 +16,7 @@ Charpente posée par plugin-plugin le 2026-10-23, à partir du cadrage approuvé
 | `secret-scan` | hook | US-13 | 2026-10-23 | `tests/hooks/test_secret_scan.sh` |
 | `protect-sensitive` | hook | US-13 | 2026-10-23 | `tests/hooks/test_protect_sensitive.sh` |
 | `checkpoint-reminder` | hook | US-6, US-13 | 2026-10-23 | `tests/hooks/test_checkpoint_reminder.sh` |
+| `agent-scope-guard` | hook | US-2, US-8, US-10 | 2026-10-23 | `tests/hooks/test_agent_scope_guard.sh` |
 
 ## Journal
 
@@ -98,3 +99,23 @@ test_checkpoint_reminder : 28 réussis, 0 échoués, 0 sautés
 ```
 
 Suite — `bash tests/run-all.sh` → exit 0 : 11 suites réussies, 0 échouée, 2 sautées (`skills/` et `agents/` absents), `claude plugin validate --strict` ok sur `.` et `.claude-plugin/plugin.json`, coût permanent 0 token (seuil 1 000), shellcheck propre du premier coup.
+
+### 2026-10-23 — hook `agent-scope-guard` (US-2, US-8, US-10)
+
+Généralisé depuis plugin-flutter (origine G) : pour les agents de ce plugin seulement (`agent_type` à préfixe `plugin-orchestrator:`), les dossiers d'écriture et la liste blanche de commandes simples de chaque agent, sous la racine du projet (`CLAUDE_PROJECT_DIR`, sinon le cwd de l'entrée) : product-architect écrit sous `docs/product/`, aucun shell ; project-architect écrit sous `docs/` (les documents d'une partie, `<path>/docs/`, restent au plugin de langage), git en lecture ; integration-reviewer n'écrit rien, git en lecture. « Git en lecture » = `status`, `log`, `diff`, `show`, `ls-files`, `rev-parse`, `branch --show-current`, `--no-pager` accepté ; une commande composée, une redirection, une substitution, une affectation en tête ou une option `--output`/`--write` sont refusées. Inerte pour la session principale, les agents intégrés et les agents d'un autre plugin, même à nom égal (`plugin-flutter:product-architect`) : chaque plugin garde son propre garde. Fail-closed pour les agents du plugin : jq absent, entrée illisible, lexer absent, agent inconnu du plugin, racine inconnue. Raisons en français nommant le plugin, l'agent et son périmètre ; elles disent de signaler sous OPEN_QUESTIONS plutôt que de contourner. Un agent doté de commandes mais sans branche de liste blanche est prouvé refusé sur une copie (le `case` de bash rend 0 sans branche).
+
+ROUGE — `bash tests/hooks/test_agent_scope_guard.sh` (squelette posé par `pp.sh add-hook`) → exit 1 :
+
+```
+test_agent_scope_guard : 39 réussis, 73 échoués, 0 sautés
+```
+
+Le contrat du squelette passe (entrée illisible et jq absent, sur des entrées qui portent le préfixe du plugin) ; les 73 échecs sont les cas de la règle : 63 cas « bloqué » (le squelette laisse tout passer), 7 vérifications de la raison, l'injection de l'agent orphelin (le squelette n'a pas de `case`) et les deux cas « inerte ailleurs » (JSON malformé et jq absent sans le préfixe), le squelette vérifiant jq et l'entrée avant le contexte.
+
+VERT — `bash tests/hooks/test_agent_scope_guard.sh` → exit 0 :
+
+```
+test_agent_scope_guard : 112 réussis, 0 échoués, 0 sautés
+```
+
+Suite — `bash tests/run-all.sh` → exit 0 : 12 réussies, 0 échouée, 2 sautées (`skills/` et `agents/` absents), `claude plugin validate --strict` ok sur `.` et `.claude-plugin/plugin.json`, coût permanent 0 token (seuil 1 000), shellcheck propre du premier coup.
