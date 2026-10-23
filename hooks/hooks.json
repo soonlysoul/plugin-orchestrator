@@ -24,6 +24,18 @@
             "onFailure": "block"
           }
         ]
+      },
+      {
+        "matcher": "Edit|Write|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/scripts/protect-sensitive.sh"],
+            "timeout": 10,
+            "onFailure": "block"
+          }
+        ]
       }
     ]
   }
