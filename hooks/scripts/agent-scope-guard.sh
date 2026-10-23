@@ -1,14 +1,18 @@
 #!/usr/bin/env bash
 # agent-scope-guard — PreToolUse hook for Edit|Write|NotebookEdit|Bash|PowerShell|Monitor.
-# For the plugin's own agents (agent_type plugin-orchestrator:<agent>), enforces what an agent
-# frontmatter cannot express: the directories each one may write, under the project root
-# (CLAUDE_PROJECT_DIR, else the cwd of the input), and its allowlist of single shell commands —
-# product-architect: docs/product/, no shell; project-architect: docs/, git in read mode;
-# integration-reviewer: no file, git in read mode. Inert in every other session, an agent of the
-# same name from another plugin included: each plugin keeps its own guard. Installed for the
-# account, it runs in every session; it assumes no order among the hooks of an event.
+# Holds each agent of the plugin (agent_type plugin-orchestrator:<agent>) to the scope that
+# hooks/agent-scope.json declares for it, written by pp.sh add-agent when the agent is added:
+# "write", the directories it may write, under the project root (CLAUDE_PROJECT_DIR, else the
+# cwd of the input); "bash", its allowlist of single shell commands, each entry matched word by
+# word as a prefix (`git branch --show-current` allows nothing else after `git branch`; `git
+# --no-pager` counts as `git`). Whatever the list, a compound command, a redirection, a
+# substitution, a leading assignment, an option that writes a file (--output, --write) or a
+# path with . or .. is refused. Inert in every other session, an agent of the same name from
+# another plugin included: each plugin keeps its own guard. Installed for the account, it runs
+# in every session; it assumes no order among the hooks of an event.
 # Fail-closed: exit 2 with the reason on stderr blocks; an internal error blocks too (jq
-# missing, unreadable input, lexer missing); hooks.json sets "onFailure": "block".
+# missing, unreadable input, lexer missing, scope missing or malformed); hooks.json sets
+# "onFailure": "block".
 set -u
 export LC_ALL=C
 PLUGIN=plugin-orchestrator
@@ -39,51 +43,55 @@ jq -e 'type == "object"' >/dev/null 2>&1 <<<"$input" || block "entrée illisible
 agent=$(jq -r '.agent_type // "" | strings' <<<"$input")
 [[ $agent == "$PLUGIN:"* ]] || allow
 agent=${agent#"$PLUGIN:"}
-
-# « Git en lecture » of the architecture: the same list for every agent given a shell.
-GIT_READ="git status, git log, git diff, git show, git ls-files, git rev-parse, git branch --show-current"
-case $agent in
-  product-architect)
-    write_dirs="docs/product"
-    allowed_commands=""
-    ;;
-  project-architect)
-    write_dirs="docs"
-    allowed_commands="$GIT_READ"
-    ;;
-  integration-reviewer)
-    write_dirs=""
-    allowed_commands="$GIT_READ"
-    ;;
-  *) block "aucun périmètre n'est défini pour l'agent $agent." ;;
+tool=$(jq -r '.tool_name // "" | strings' <<<"$input")
+case $tool in
+  Edit | Write | NotebookEdit | Bash | PowerShell | Monitor) ;;
+  *) allow ;;
 esac
 
-# git_read_only <words after git>: the read-only git commands; --no-pager is harmless.
-git_read_only() {
-  if [[ ${1-} == --no-pager ]]; then shift; fi
-  case ${1-} in
-    status | log | diff | show | ls-files | rev-parse) return 0 ;;
-    branch) [[ $# == 2 && $2 == --show-current ]] ;;
-    *) return 1 ;;
-  esac
-}
+# The scope of the agent, declared when it was added. No declaration, no scope: refused.
+scope_file="$here/../agent-scope.json"
+jq -e 'type == "object"' "$scope_file" >/dev/null 2>&1 || block "hooks/agent-scope.json est absent ou illisible : aucun périmètre pour l'agent $agent."
+scope=$(jq -c --arg a "$PLUGIN:$agent" '.[$a] // empty' "$scope_file")
+[[ -n $scope ]] || block "aucun périmètre n'est déclaré pour l'agent $agent dans hooks/agent-scope.json."
+jq -e 'type == "object" and ((.write // []) | type == "array" and all(strings)) and ((.bash // []) | type == "array" and all(strings))' \
+  >/dev/null 2>&1 <<<"$scope" || block "périmètre malformé pour l'agent $agent dans hooks/agent-scope.json."
+write_dirs=()
+allowed=()
+listed=""
+allowed_commands=""
+while IFS= read -r dir; do
+  dir=${dir%/}
+  [[ -n $dir && $dir != /* && /$dir/ != */../* && /$dir/ != */./* ]] || block "dossier d'écriture malformé pour l'agent $agent : $dir"
+  write_dirs+=("$dir")
+  listed+="${listed:+, }$dir/"
+done < <(jq -r '.write // [] | .[]' <<<"$scope")
+while IFS= read -r entry; do
+  [[ -n ${entry// /} ]] || continue
+  allowed+=("$entry")
+  allowed_commands+="${allowed_commands:+, }$entry"
+done < <(jq -r '.bash // [] | .[]' <<<"$scope")
 
-# command_allowed <words>: the allowlist of the current agent.
+# command_allowed <words>: the words start with every word of one entry of the allowlist.
 command_allowed() {
-  case $agent in
-    project-architect | integration-reviewer)
-      [[ ${1-} == git ]] && git_read_only "${@:2}"
-      ;;
-    # A case without a matching branch returns 0: an agent without a branch must not pass.
-    *) return 1 ;;
-  esac
+  local -a words=("$@") want
+  local entry i
+  if [[ ${words[0]-} == git && ${words[1]-} == --no-pager ]]; then words=(git "${words[@]:2}"); fi
+  for entry in ${allowed[@]+"${allowed[@]}"}; do
+    read -ra want <<<"$entry"
+    ((${#want[@]} > 0 && ${#want[@]} <= ${#words[@]})) || continue
+    for ((i = 0; i < ${#want[@]}; i++)); do
+      [[ ${want[i]} == "${words[i]}" ]] || continue 2
+    done
+    return 0
+  done
+  return 1
 }
 
 check_write() {
-  local path root rel dir listed=""
+  local path root rel dir
   path=$(jq -r '.tool_input.file_path // .tool_input.notebook_path // "" | strings' <<<"$input")
-  [[ -n $write_dirs ]] || block "$agent n'écrit aucun fichier."
-  for dir in $write_dirs; do listed+="${listed:+, }$dir/"; done
+  ((${#write_dirs[@]})) || block "$agent n'écrit aucun fichier."
   [[ $path == /* ]] || block "$agent n'écrit que des fichiers donnés par un chemin absolu sous : $listed."
   case /$path/ in
     */../* | */./*) block "$agent ne peut pas utiliser . ou .. dans un chemin : $path" ;;
@@ -93,7 +101,7 @@ check_write() {
   [[ -n $root ]] || block "la racine du projet est inconnue."
   [[ $path == "$root"/* ]] || block "$agent n'écrit que dans le projet, sous : $listed. Refusé : $path"
   rel=${path#"$root"/}
-  for dir in $write_dirs; do
+  for dir in "${write_dirs[@]}"; do
     if [[ $rel == "$dir"/* ]]; then allow; fi
   done
   block "$agent n'écrit que sous : $listed. Refusé : $rel"
@@ -101,7 +109,7 @@ check_write() {
 
 check_command() {
   local command word
-  [[ -n $allowed_commands ]] || block "$agent ne lance aucune commande."
+  ((${#allowed[@]})) || block "$agent ne lance aucune commande."
   command=$(jq -er '.tool_input.command // "" | strings' <<<"$input") || block "tool_input.command n'est pas une chaîne."
   [[ -n $command ]] || block "$agent ne lance que : $allowed_commands."
   sw_lex "$command"
@@ -118,8 +126,7 @@ check_command() {
   block "$agent ne lance que : $allowed_commands."
 }
 
-case $(jq -r '.tool_name // "" | strings' <<<"$input") in
+case $tool in
   Edit | Write | NotebookEdit) check_write ;;
-  Bash | PowerShell | Monitor) check_command ;;
+  *) check_command ;;
 esac
-allow

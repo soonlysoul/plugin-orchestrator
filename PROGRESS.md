@@ -141,3 +141,15 @@ test_doc_status_guard : 62 réussis, 0 échoués, 0 sautés
 ```
 
 Suite — `bash tests/run-all.sh` → exit 0 : 13 réussies, 0 échouée, 2 sautées (`skills/` et `agents/` absents), `claude plugin validate --strict` ok sur `.` et `.claude-plugin/plugin.json`, coût permanent 0 token (seuil 1 000), shellcheck propre du premier coup (hook et bibliothèque).
+
+### 2026-10-23 — refactor `agent-scope-guard` : portées lues dans `hooks/agent-scope.json`
+
+`pp.sh add-agent` refuse de déclarer la portée d'un agent qui écrit tant que le garde du plugin ne lit pas `hooks/agent-scope.json` — le modèle plugin-plugin : une entrée `{write, bash}` par agent, écrite à l'ajout de l'agent et vérifiée par son test statique. Le garde passe donc de portées codées en dur à ce fichier, sans changer ses règles : lexer partagé, une commande simple à la fois, `--output`/`--write`, `.`/`..`, racine du projet, fail-closed, raisons en français. Les entrées de commande sont comparées mot à mot comme préfixe (`git branch --show-current` ne couvre pas `git branch x` ; `git --no-pager` compte comme `git`) ; un agent sans entrée, un fichier absent ou illisible, une portée malformée bloquent. Les portées de project-architect et integration-reviewer (v0.2) sortent du hook : `add-agent` les déclarera à leur ajout. Le test prouve les règles sur une copie du hook avec un JSON de fixture, puis tient chaque agent réellement déclaré à sa propre entrée (section sautée tant que le fichier n'existe pas). Décision de Soon le 2026-10-23, entre convertir le garde et écrire les agents hors de l'outil.
+
+`bash tests/hooks/test_agent_scope_guard.sh` → exit 0 :
+
+```
+test_agent_scope_guard : 99 réussis, 0 échoués, 1 sautés
+```
+
+Suite — `bash tests/run-all.sh` → exit 1 sous la charge de sessions parallèles (load average 9 à 29 sur 8 cœurs) : 12 réussies dont `test_agent_scope_guard` et `test_paths` (shellcheck), `test_secret_scan` 128/128 au premier niveau ; le seul échec est `test_run_all`, dont la copie « claude absent » relance la suite et y voit le test de vitesse de secret-scan (3 000 fichiers en moins de 5 s, hook non modifié) dépasser le seuil (5,4 à 5,6 s mesurées sous charge) ; `test_run_all` seul, lancé entre-temps à charge 9,6 → exit 0, 31 réussis. `claude plugin validate --strict` ok sur `.` et `.claude-plugin/plugin.json`, coût permanent 0 token.
