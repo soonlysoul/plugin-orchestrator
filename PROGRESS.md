@@ -5,7 +5,7 @@ Reprise : lire ce fichier, puis `git log --oneline`.
 
 ## État courant
 
-Charpente posée par plugin-plugin le 2026-10-23, à partir du cadrage approuvé (`docs/PRD.md`, `docs/ARCHITECTURE.md`). Trois hooks ajoutés le 2026-10-23 : `guard-destructive`, `secret-scan` et `protect-sensitive` (US-13), avec le lexer partagé `hooks/scripts/lib/shell-lexer.sh` repris de plugin-flutter. Prochaine étape : les autres hooks de la v0.1 (`checkpoint-reminder`, `agent-scope-guard`, `doc-status-guard`), par `/plugin-plugin:add`.
+Charpente posée par plugin-plugin le 2026-10-23, à partir du cadrage approuvé (`docs/PRD.md`, `docs/ARCHITECTURE.md`). Quatre hooks ajoutés le 2026-10-23 : `guard-destructive`, `secret-scan`, `protect-sensitive` (US-13) et `checkpoint-reminder` (US-6, US-13), avec le lexer partagé `hooks/scripts/lib/shell-lexer.sh` repris de plugin-flutter. Prochaine étape : les deux hooks restants de la v0.1 (`agent-scope-guard`, `doc-status-guard`), par `/plugin-plugin:add`.
 
 ## Composants
 
@@ -15,6 +15,7 @@ Charpente posée par plugin-plugin le 2026-10-23, à partir du cadrage approuvé
 | `hooks/scripts/lib/shell-lexer.sh` | script | US-13 | 2026-10-23 | par les tests de guard-destructive et secret-scan (cas « structure de commande » et « lexer partagé absent ») |
 | `secret-scan` | hook | US-13 | 2026-10-23 | `tests/hooks/test_secret_scan.sh` |
 | `protect-sensitive` | hook | US-13 | 2026-10-23 | `tests/hooks/test_protect_sensitive.sh` |
+| `checkpoint-reminder` | hook | US-6, US-13 | 2026-10-23 | `tests/hooks/test_checkpoint_reminder.sh` |
 
 ## Journal
 
@@ -77,3 +78,23 @@ test_protect_sensitive : 34 réussis, 0 échoués, 0 sautés
 ```
 
 Suite — `bash tests/run-all.sh` → exit 0 : 10 suites réussies, 0 échouée, 2 sautées (`skills/` et `agents/` absents), `claude plugin validate --strict` ok sur `.` et `.claude-plugin/plugin.json`, coût permanent 0 token (seuil 1 000), shellcheck propre du premier coup.
+
+### 2026-10-23 — hook `checkpoint-reminder` (US-6, US-13)
+
+Repris tel quel de plugin-flutter (origine R) : à l'arrêt d'un tour, quand `.forge/checkpoint.md` du projet (`CLAUDE_PROJECT_DIR`, sinon le cwd) est plus vieux que le dernier commit ou qu'un changement non commité du projet, un rappel unique par `additionalContext` demande de le mettre à jour puis de s'arrêter ; un dernier commit qui porte le checkpoint, inchangé depuis, ne compte pas ; un projet en sous-dossier du dépôt est traité. Inerte sans checkpoint, hors d'un dépôt git, ou si `stop_hook_active`. Fail-open : jq ou git absents, entrée illisible, exit 0 silencieux. Message en français nommant le plugin.
+
+ROUGE — `bash tests/hooks/test_checkpoint_reminder.sh` (squelette posé par `pp.sh add-hook`) → exit 1 :
+
+```
+test_checkpoint_reminder : 19 réussis, 9 échoués, 0 sautés
+```
+
+Le contrat du squelette passe (entrée illisible et jq absent, exit 0) ; les 9 échecs sont les cas de rappel ; les cas silencieux passent déjà, le squelette ne faisant rien.
+
+VERT — `bash tests/hooks/test_checkpoint_reminder.sh` → exit 0 :
+
+```
+test_checkpoint_reminder : 28 réussis, 0 échoués, 0 sautés
+```
+
+Suite — `bash tests/run-all.sh` → exit 0 : 11 suites réussies, 0 échouée, 2 sautées (`skills/` et `agents/` absents), `claude plugin validate --strict` ok sur `.` et `.claude-plugin/plugin.json`, coût permanent 0 token (seuil 1 000), shellcheck propre du premier coup.
