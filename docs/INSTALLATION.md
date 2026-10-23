@@ -32,3 +32,4 @@ Installé pour le compte, chaque hook de ce plugin s'applique à toutes les sess
 - `protect-sensitive` — PreToolUse (Edit|Write|NotebookEdit), fail-closed.
 - `checkpoint-reminder` — Stop, fail-open.
 - `agent-scope-guard` — PreToolUse (Edit|Write|NotebookEdit|Bash|PowerShell|Monitor), fail-closed.
+- `doc-status-guard` — PostToolUse (Edit|Write), fail-open.

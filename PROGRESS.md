@@ -5,7 +5,7 @@ Reprise : lire ce fichier, puis `git log --oneline`.
 
 ## État courant
 
-Charpente posée par plugin-plugin le 2026-10-23, à partir du cadrage approuvé (`docs/PRD.md`, `docs/ARCHITECTURE.md`). Cinq hooks ajoutés le 2026-10-23 : `guard-destructive`, `secret-scan`, `protect-sensitive` (US-13), `checkpoint-reminder` (US-6, US-13) et `agent-scope-guard` (US-2, US-8, US-10), avec le lexer partagé `hooks/scripts/lib/shell-lexer.sh` repris de plugin-flutter. Prochaine étape : le dernier hook de la v0.1 (`doc-status-guard`), par `/plugin-plugin:add`.
+Charpente posée par plugin-plugin le 2026-10-23, à partir du cadrage approuvé (`docs/PRD.md`, `docs/ARCHITECTURE.md`). Les six hooks de la v0.1 sont ajoutés le 2026-10-23 : `guard-destructive`, `secret-scan`, `protect-sensitive` (US-13), `checkpoint-reminder` (US-6, US-13), `agent-scope-guard` (US-2, US-8, US-10) et `doc-status-guard` (US-13), avec le lexer partagé `hooks/scripts/lib/shell-lexer.sh` repris de plugin-flutter et la bibliothèque de statut des documents `scripts/lib/doc-status.sh` reprise de plugin-plugin. Prochaine étape : les composants restants de la v0.1 — `scripts/orch.sh` (dont `approve`, qui consigne l'empreinte dans `.forge/approvals.log`), gabarits, agent `product-architect`, skills — par `/plugin-plugin:add`.
 
 ## Composants
 
@@ -17,6 +17,8 @@ Charpente posée par plugin-plugin le 2026-10-23, à partir du cadrage approuvé
 | `protect-sensitive` | hook | US-13 | 2026-10-23 | `tests/hooks/test_protect_sensitive.sh` |
 | `checkpoint-reminder` | hook | US-6, US-13 | 2026-10-23 | `tests/hooks/test_checkpoint_reminder.sh` |
 | `agent-scope-guard` | hook | US-2, US-8, US-10 | 2026-10-23 | `tests/hooks/test_agent_scope_guard.sh` |
+| `doc-status-guard` | hook | US-13 | 2026-10-23 | `tests/hooks/test_doc_status_guard.sh` |
+| `scripts/lib/doc-status.sh` | script | US-13 | 2026-10-23 | par le test de doc-status-guard (mise en place des approbations, cas « bibliothèque absente ») et `tests/static/test_paths.sh` (bash -n, shellcheck) |
 
 ## Journal
 
@@ -119,3 +121,23 @@ test_agent_scope_guard : 112 réussis, 0 échoués, 0 sautés
 ```
 
 Suite — `bash tests/run-all.sh` → exit 0 : 12 réussies, 0 échouée, 2 sautées (`skills/` et `agents/` absents), `claude plugin validate --strict` ok sur `.` et `.claude-plugin/plugin.json`, coût permanent 0 token (seuil 1 000), shellcheck propre du premier coup.
+
+### 2026-10-23 — hook `doc-status-guard` (US-13)
+
+Repris de plugin-plugin (origine R) et adapté au socle : un document projet — un `.md` sous un `docs/` d'un projet `.forge/` (le plus proche parent du fichier, quelle que soit la racine de session), à la racine ou dans une partie — dont l'en-tête fixe du format plugin-flutter dit `| Status | APPROVED |`, mais dont l'empreinte du corps (sha256 sans les lignes Status et Approved) ne correspond plus à celle consignée à son approbation dans `.forge/approvals.log` (date, document relatif à la racine du projet, empreinte, citation ; séparés par des tabulations), repasse en REVIEW : ligne Status réécrite, ligne Approved gardant la date de l'approbation perdue, Claude prévenu par `additionalContext`. Un APPROVED sans trace au journal repasse en REVIEW à sa première modification : l'approbation passe par `scripts/orch.sh approve` (à venir), jamais par un hook. Silencieux hors de ce contexte (pas de `.forge/`, hors `docs/`, pas de ligne de statut, DRAFT ou REVIEW, autre outil, fichier absent) ; fail-open (jq, sha256sum ou la bibliothèque absents, entrée illisible : exit 0, document intact). Les fonctions de statut, d'empreinte et de journal sont dans `scripts/lib/doc-status.sh`, bibliothèque partagée avec le futur `orch.sh` pour que l'empreinte n'ait qu'une définition. Message en français nommant le plugin et le document.
+
+ROUGE — `bash tests/hooks/test_doc_status_guard.sh` (squelette posé par `pp.sh add-hook`, bibliothèque déjà posée) → exit 1 :
+
+```
+test_doc_status_guard : 46 réussis, 16 échoués, 0 sautés
+```
+
+Le contrat du squelette passe (entrée illisible et jq absent, exit 0) ; les 16 échecs sont les cas de la règle (retour en REVIEW, `additionalContext`, date de la ligne Approved) ; les cas silencieux passent déjà, le squelette ne faisant rien.
+
+VERT — `bash tests/hooks/test_doc_status_guard.sh` → exit 0 :
+
+```
+test_doc_status_guard : 62 réussis, 0 échoués, 0 sautés
+```
+
+Suite — `bash tests/run-all.sh` → exit 0 : 13 réussies, 0 échouée, 2 sautées (`skills/` et `agents/` absents), `claude plugin validate --strict` ok sur `.` et `.claude-plugin/plugin.json`, coût permanent 0 token (seuil 1 000), shellcheck propre du premier coup (hook et bibliothèque).
