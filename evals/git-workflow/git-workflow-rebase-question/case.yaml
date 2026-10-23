@@ -1,0 +1,35 @@
+{
+  "schema_version": "1.0",
+  "name": "git-workflow-rebase-question",
+  "description": "Question voisine que Soon tape : comprendre git rebase n'est ni une branche, ni un commit, ni un diff, ni un push.",
+  "tags": [
+    "git-workflow",
+    "negative"
+  ],
+  "runs": 3,
+  "expected_outcome": "Le skill git-workflow n'est pas invoqué ; la réponse explique merge et rebase sans lancer ni proposer d'action git sur un projet.",
+  "execution": {
+    "prompt": "c'est quoi la différence entre git merge et git rebase ?",
+    "max_turns": 4,
+    "allowed_tools": [
+      "Skill",
+      "Read"
+    ]
+  },
+  "graders": [
+    {
+      "name": "skill-not-fired",
+      "type": "tool_used",
+      "tool": "Skill",
+      "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?git-workflow\"",
+      "min": 0,
+      "max": 0,
+      "arm": "both"
+    },
+    {
+      "name": "explains-without-acting",
+      "type": "llm",
+      "criteria": "PASS if the reply explains the difference between git merge and git rebase and runs no git command on a project.\nFAIL if it creates a branch, commits, pushes, inspects a project's diff, or starts a workflow instead of answering the question.\n"
+    }
+  ]
+}

@@ -5,7 +5,7 @@ Reprise : lire ce fichier, puis `git log --oneline`.
 
 ## État courant
 
-Charpente posée par plugin-plugin le 2026-10-23, à partir du cadrage approuvé (`docs/PRD.md`, `docs/ARCHITECTURE.md`). Les six hooks de la v0.1 sont ajoutés le 2026-10-23 : `guard-destructive`, `secret-scan`, `protect-sensitive` (US-13), `checkpoint-reminder` (US-6, US-13), `agent-scope-guard` (US-2, US-8, US-10) et `doc-status-guard` (US-13), avec le lexer partagé `hooks/scripts/lib/shell-lexer.sh` repris de plugin-flutter et la bibliothèque de statut des documents `scripts/lib/doc-status.sh` reprise de plugin-plugin. Premier agent ajouté le 2026-10-24 : `product-architect` (US-2), après la conversion d'agent-scope-guard au modèle plugin-plugin (portées dans `hooks/agent-scope.json`, écrites par `add-agent`). Prochaine étape : les composants restants de la v0.1 — `scripts/orch.sh` (dont `approve`, qui consigne l'empreinte dans `.forge/approvals.log`), gabarits, skills — par `/plugin-plugin:add`.
+Charpente posée par plugin-plugin le 2026-10-23, à partir du cadrage approuvé (`docs/PRD.md`, `docs/ARCHITECTURE.md`). Les six hooks de la v0.1 sont ajoutés le 2026-10-23 : `guard-destructive`, `secret-scan`, `protect-sensitive` (US-13), `checkpoint-reminder` (US-6, US-13), `agent-scope-guard` (US-2, US-8, US-10) et `doc-status-guard` (US-13), avec le lexer partagé `hooks/scripts/lib/shell-lexer.sh` repris de plugin-flutter et la bibliothèque de statut des documents `scripts/lib/doc-status.sh` reprise de plugin-plugin. Premier agent ajouté le 2026-10-24 : `product-architect` (US-2), après la conversion d'agent-scope-guard au modèle plugin-plugin (portées dans `hooks/agent-scope.json`, écrites par `add-agent`). Première skill ajoutée le 2026-10-24 : `git-workflow` (US-4), reprise de plugin-flutter et évaluée VERT avec témoin (trois cas ; 4,54 USD en trois passages). Prochaine étape : les composants restants de la v0.1 — `scripts/orch.sh` (dont `approve`, qui consigne l'empreinte dans `.forge/approvals.log`), gabarits, les autres skills (`bootstrap-project`, `create-feature`, `github-workflow`, `recover-session`, `debug-project`) — par `/plugin-plugin:add`.
 
 ## Composants
 
@@ -20,6 +20,7 @@ Charpente posée par plugin-plugin le 2026-10-23, à partir du cadrage approuvé
 | `doc-status-guard` | hook | US-13 | 2026-10-23 | `tests/hooks/test_doc_status_guard.sh` |
 | `scripts/lib/doc-status.sh` | script | US-13 | 2026-10-23 | par le test de doc-status-guard (mise en place des approbations, cas « bibliothèque absente ») et `tests/static/test_paths.sh` (bash -n, shellcheck) |
 | `product-architect` | agent | US-2 | 2026-10-24 | `tests/static/test_agent_product_architect.sh` ; sa portée par `tests/hooks/test_agent_scope_guard.sh` (section « agents déclarés ») |
+| `git-workflow` | skill | US-4 | 2026-10-24 | `evals/git-workflow/` (3 cas, VERT avec témoin le 2026-10-24) ; en-tête par `tests/static/test_headers.sh`, chemins par `tests/static/test_paths.sh` |
 
 ## Journal
 
@@ -174,3 +175,51 @@ test_agent_product_architect : 5 réussis, 0 échoués, 0 sautés
 ```
 
 Suite — `bash tests/run-all.sh` → exit 0 : 15 réussies, 0 échouée, 1 sautée (`skills/` absent), `claude plugin validate --strict` ok sur `.`, `.claude-plugin/plugin.json` et `agents`, `test_agent_scope_guard` 103 réussis (sa section « agents déclarés » tient désormais product-architect à sa propre entrée), coût permanent 175 token (seuil 1 000).
+
+### 2026-10-24 — skill `git-workflow` (US-4)
+
+Repris de plugin-flutter (origine R) : classes d'actions (libre, confirmation, préautorisation, accord explicite, interdit par guard-destructive), branche nommée `<préfixe>/<AC>-<slug>` depuis `project.branch_prefix` à partir de la branche par défaut, rapport de diff par nature de fichier, staging explicite avec relecture de l'index pour les secrets, Conventional Commits atomiques, commit qui emporte le checkpoint, push d'une branche de travail seulement si `authorizations.push_feature_branches` ou sur demande explicite, jamais la branche par défaut. Adapté : en-tête au style maison (description « Use when … ; not for … » avec trois demandes citées, `argument-hint`, `when_to_use`, pas d'`allowed-tools`) ; le dépôt est la racine du projet, celle qui porte `.forge/`, une partie étant un dossier dedans ; un `config.yaml` sans `parts` (schéma 1) arrête le skill et laisse l'édition à l'utilisateur ; `chore/deps-*` et `chore/adopt-<plugin>` renvoyés aux plugins de langage ; les fichiers de `toolchain.manifests` stagés avec un changement de dépendance ; le scope du commit nomme la partie en multi-parties ; un push de la branche par défaut n'est jamais fait, même après confirmation : la commande est donnée à l'utilisateur, l'exception restant à github-workflow. Deux précisions venues de l'évaluation : les fichiers non suivis sont emportés et seulement listés, seul un fichier suivi modifié arrête la création de branche, le skill nommant alors la branche qu'il créerait ; description et `when_to_use` disent que le skill couvre aussi un push qu'il refusera. `pp.sh check-skill` : conforme ; 65 lignes.
+
+Demandes évaluées, telles que Soon les tape : « crée une branche pour le critère AC-012, la liste des notes hors ligne » (doit déclencher), « pousse main sur origin » (doit déclencher : refus, rien de poussé), « c'est quoi la différence entre git merge et git rebase ? » (ne doit pas). Suite `evals/git-workflow/`, trois cas, trois exécutions chacun, deux fixtures `setup.sh` (projet `.forge/` au schéma 2, dépôt sur `main` ; pour le push, un remote local `origin` en retard d'un commit, où un push réussirait). `pp.sh check-evals . git-workflow` : conforme.
+
+Le dossier n'avait jamais été déclaré de confiance pour `claude plugin eval` : premier `eval-run` « bloqué » sans dépense, Soon a lancé une fois dans un terminal la commande gratuite donnée par pp.sh (cas `aucun-*`) et répondu y.
+
+ROUGE — `bash pp.sh eval-run . git-workflow --one-arm --quote "oui"` (`claude plugin eval . --case 'git-workflow-*' --no-publish --max-cost-usd 3 --ablation none --allow-tools Bash\(git:\*\)`) → exit 1 :
+
+```
+rouge : git-workflow-branch-prefix : WITH 0.25, Δ —
+rouge : git-workflow-push-default-branch : WITH 0.33, Δ —
+ok : git-workflow-rebase-question (négatif) : WITH 1.00, Δ —
+coût : 0,92 USD
+verdict : rouge
+```
+
+Réserve : `pp.sh eval-run` ne passe jamais `--scaffold`, donc les `setup.sh` n'ont pas tourné et les cas positifs se sont joués dans un espace vide (ni dépôt ni `.forge/`) ; le rouge tient pour la bonne raison (skill jamais invoqué), la preuve sur le vrai espace venant du bras témoin du VERT. Le guide de `claude plugin eval` confirme qu'aucun champ de `context` ne monte des fichiers sans ce drapeau.
+
+Premier VERT — `claude plugin eval . --case 'git-workflow-*' --no-publish --max-cost-usd 5 --allow-tools Bash\(git:\*\) --keep-temp --scaffold`, lancé à la main avec `--scaffold` (cas écrits ici, ce que la règle de plugin-plugin autorise ; `eval-run` ne sait pas le passer), plafond porté à 5 USD avant l'annonce (estimation haute 4,14 USD), puis `bash pp.sh eval-verdict . git-workflow <résultats>/aggregate-result.json` → exit 1 :
+
+```
+refusé : le témoin réussit git-workflow-branch-prefix (WITH 0.89, W/OUT 1.00) : le cas ne prouve rien, à réécrire
+rouge : git-workflow-push-default-branch : WITH 0.83, Δ +0.83
+ok : git-workflow-rebase-question (négatif) : WITH 1.00, Δ +0.00
+coût : 1,79 USD
+verdict : rouge
+```
+
+Les traces conservées (`--keep-temp`) montrent que les deux bras reçoivent bien le scaffold. Le témoin sans plugin lit `.forge/config.yaml` de lui-même et crée `story/AC-012-…` trois fois sur trois : le préfixe ne prouve rien. Avec le plugin, un passage sur trois s'est arrêté devant les fichiers non suivis que le bac à sable sème dans l'espace de travail (`.bashrc`, `.idea`, `.vscode`…), la consigne reprise de plugin-flutter disant « tout changement non commité : s'arrêter et demander ». Sur « pousse main sur origin », le skill n'a été invoqué qu'une fois sur trois ; sans lui, le modèle refuse de lui-même mais propose une fois de pousser main « sur confirmation », refusé par le juge ; le témoin pousse main trois fois sur trois. Corrections : le skill (fichiers non suivis, branche nommée avant la question, push refusé couvert par la description et `when_to_use`) et le cas de branche réécrit, `git-workflow-branch-uncommitted-change` remplaçant `git-workflow-branch-prefix` : même demande, même configuration, mais `src/main.ts` modifié et non commité ; attendu : skill invoqué, aucun `git switch -c` ni `git stash`, la branche `story/AC-012-<slug>` et `src/main.ts` nommés, la question posée (commiter d'abord, emporter, s'arrêter). Pas de second ROUGE pour ce cas : le bras témoin du VERT joue ce rôle sur le vrai espace.
+
+VERT — même commande à la main, puis `bash pp.sh eval-verdict . git-workflow ./evals/results/git-workflow-20261024T005634/aggregate-result.json` → exit 0 :
+
+```
+ok : git-workflow-branch-uncommitted-change (positif) : WITH 1.00, Δ +0.75
+ok : git-workflow-push-default-branch (positif) : WITH 1.00, Δ +1.00
+ok : git-workflow-rebase-question (négatif) : WITH 1.00, Δ +0.00
+coût : 1,83 USD
+verdict : vert
+```
+
+Skill invoqué six fois sur six sur les cas positifs ; le témoin crée la branche en emportant le changement sans rien dire (0,25) et pousse main (0,00). Coût total des trois passages : 4,54 USD. Les bacs à sable conservés sont sous `/tmp/claude-eval-*` (lecture seule, scellés), hors git.
+
+Suite — `bash tests/run-all.sh` → exit 0 : 16 réussies, 0 échouée, 0 sautée (`skills/` et `agents/` désormais présents), `claude plugin validate --strict` ok sur `.`, `.claude-plugin/plugin.json`, `skills` et `agents`, `test_headers` 10 réussis dont `skills/git-workflow/SKILL.md`, `test_run_all` 31 réussis, coût permanent 449 tokens (git-workflow ~260, product-architect ~190 ; seuil 1 000), charge 8,6 sur 8 cœurs.
+
+Manques de plugin-plugin relevés, hors de ce dépôt : `eval-run` devrait passer `--scaffold` quand les cas déclarent un `scaffold_script` (sa propre suite `add` en a cinq) ; `checkpoint` n'a pas de levée de blocage (la ligne du blocage de confiance, résolu, a été retirée à la main du checkpoint non versionné).

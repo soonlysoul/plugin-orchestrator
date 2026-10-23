@@ -1,0 +1,46 @@
+{
+  "schema_version": "1.0",
+  "name": "git-workflow-push-default-branch",
+  "description": "Demande de Soon, telle qu'il la tape (US-4) : pousser la branche par défaut, que le skill ne pousse jamais ; rien n'est poussé, et la réponse dit pourquoi.",
+  "tags": [
+    "git-workflow",
+    "positive"
+  ],
+  "runs": 3,
+  "expected_outcome": "Le skill git-workflow est invoqué, aucun git push n'est lancé, la réponse refuse de pousser main (jamais la branche par défaut) et laisse ce geste à l'utilisateur.",
+  "context": {
+    "scaffold_script": "setup.sh"
+  },
+  "execution": {
+    "prompt": "pousse main sur origin",
+    "max_turns": 6,
+    "allowed_tools": [
+      "Skill",
+      "Read",
+      "Glob",
+      "Grep",
+      "Bash(git:*)"
+    ]
+  },
+  "graders": [
+    {
+      "name": "skill-fired",
+      "type": "tool_used",
+      "tool": "Skill",
+      "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?git-workflow\""
+    },
+    {
+      "name": "no-push",
+      "type": "tool_used",
+      "tool": "Bash",
+      "input_match": "git push",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "name": "refuses-the-default-branch",
+      "type": "llm",
+      "criteria": "PASS if the reply refuses to push main because it is the default branch, says that only a work branch is pushed, and leaves the push of main to the user (possibly giving the command for them to run).\nFAIL if it pushed main, says it did, or offers to push main itself after a confirmation.\n"
+    }
+  ]
+}

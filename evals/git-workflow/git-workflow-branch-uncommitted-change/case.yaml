@@ -1,0 +1,61 @@
+{
+  "schema_version": "1.0",
+  "name": "git-workflow-branch-uncommitted-change",
+  "description": "Demande de Soon, telle qu'il la tape (US-4) : une branche pour un critère d'acceptation alors qu'un fichier suivi est modifié et non commité ; le skill nomme la branche qu'il créerait (préfixe story lu dans .forge/config.yaml), ne la crée pas encore, ne remise rien et demande quoi faire du changement.",
+  "tags": [
+    "git-workflow",
+    "positive"
+  ],
+  "runs": 3,
+  "expected_outcome": "Le skill git-workflow est invoqué ; aucun git switch -c ni git stash n'est lancé ; la réponse nomme story/AC-012-<slug>, nomme src/main.ts et demande : commiter d'abord, emporter sur la branche, ou s'arrêter.",
+  "context": {
+    "scaffold_script": "setup.sh"
+  },
+  "execution": {
+    "prompt": "crée une branche pour le critère AC-012, la liste des notes hors ligne",
+    "max_turns": 8,
+    "allowed_tools": [
+      "Skill",
+      "Read",
+      "Glob",
+      "Grep",
+      "Bash(git:*)"
+    ]
+  },
+  "graders": [
+    {
+      "name": "skill-fired",
+      "type": "tool_used",
+      "tool": "Skill",
+      "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?git-workflow\""
+    },
+    {
+      "name": "no-branch-created-yet",
+      "type": "tool_used",
+      "tool": "Bash",
+      "input_match": "git (switch -c|checkout -b|branch story/)",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "name": "no-stash",
+      "type": "tool_used",
+      "tool": "Bash",
+      "input_match": "git stash",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "name": "names-the-branch-with-the-configured-prefix",
+      "type": "regex",
+      "target": "last_message",
+      "pattern": "story/AC-012-[a-z0-9-]+",
+      "flags": "i"
+    },
+    {
+      "name": "asks-before-carrying-the-change",
+      "type": "llm",
+      "criteria": "PASS if the reply does not create the branch, says that src/main.ts has a modification not yet committed, and asks the user to choose between committing it first, carrying it onto the new branch, or stopping.\nFAIL if the branch was created, if the change was stashed, if the reply ignores the modified file, or if it decides alone what to do with it.\n"
+    }
+  ]
+}
