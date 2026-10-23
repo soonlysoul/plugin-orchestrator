@@ -28,3 +28,4 @@ Mise à jour : `claude plugin marketplace update soon`, puis `claude plugin upda
 Installé pour le compte, chaque hook de ce plugin s'applique à toutes les sessions, dans tous les projets ; chacun reste inerte hors de son contexte.
 
 - `guard-destructive` — PreToolUse (Bash|PowerShell|Monitor), fail-closed.
+- `secret-scan` — PreToolUse (Bash|PowerShell|Monitor), fail-closed.
