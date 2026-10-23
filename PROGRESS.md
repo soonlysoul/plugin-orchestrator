@@ -1,11 +1,11 @@
 # PROGRESS — plugin-orchestrator
 
-Dernière mise à jour : 2026-10-23
+Dernière mise à jour : 2026-10-24
 Reprise : lire ce fichier, puis `git log --oneline`.
 
 ## État courant
 
-Charpente posée par plugin-plugin le 2026-10-23, à partir du cadrage approuvé (`docs/PRD.md`, `docs/ARCHITECTURE.md`). Les six hooks de la v0.1 sont ajoutés le 2026-10-23 : `guard-destructive`, `secret-scan`, `protect-sensitive` (US-13), `checkpoint-reminder` (US-6, US-13), `agent-scope-guard` (US-2, US-8, US-10) et `doc-status-guard` (US-13), avec le lexer partagé `hooks/scripts/lib/shell-lexer.sh` repris de plugin-flutter et la bibliothèque de statut des documents `scripts/lib/doc-status.sh` reprise de plugin-plugin. Prochaine étape : les composants restants de la v0.1 — `scripts/orch.sh` (dont `approve`, qui consigne l'empreinte dans `.forge/approvals.log`), gabarits, agent `product-architect`, skills — par `/plugin-plugin:add`.
+Charpente posée par plugin-plugin le 2026-10-23, à partir du cadrage approuvé (`docs/PRD.md`, `docs/ARCHITECTURE.md`). Les six hooks de la v0.1 sont ajoutés le 2026-10-23 : `guard-destructive`, `secret-scan`, `protect-sensitive` (US-13), `checkpoint-reminder` (US-6, US-13), `agent-scope-guard` (US-2, US-8, US-10) et `doc-status-guard` (US-13), avec le lexer partagé `hooks/scripts/lib/shell-lexer.sh` repris de plugin-flutter et la bibliothèque de statut des documents `scripts/lib/doc-status.sh` reprise de plugin-plugin. Premier agent ajouté le 2026-10-24 : `product-architect` (US-2), après la conversion d'agent-scope-guard au modèle plugin-plugin (portées dans `hooks/agent-scope.json`, écrites par `add-agent`). Prochaine étape : les composants restants de la v0.1 — `scripts/orch.sh` (dont `approve`, qui consigne l'empreinte dans `.forge/approvals.log`), gabarits, skills — par `/plugin-plugin:add`.
 
 ## Composants
 
@@ -19,6 +19,7 @@ Charpente posée par plugin-plugin le 2026-10-23, à partir du cadrage approuvé
 | `agent-scope-guard` | hook | US-2, US-8, US-10 | 2026-10-23 | `tests/hooks/test_agent_scope_guard.sh` |
 | `doc-status-guard` | hook | US-13 | 2026-10-23 | `tests/hooks/test_doc_status_guard.sh` |
 | `scripts/lib/doc-status.sh` | script | US-13 | 2026-10-23 | par le test de doc-status-guard (mise en place des approbations, cas « bibliothèque absente ») et `tests/static/test_paths.sh` (bash -n, shellcheck) |
+| `product-architect` | agent | US-2 | 2026-10-24 | `tests/static/test_agent_product_architect.sh` ; sa portée par `tests/hooks/test_agent_scope_guard.sh` (section « agents déclarés ») |
 
 ## Journal
 
@@ -153,3 +154,23 @@ test_agent_scope_guard : 99 réussis, 0 échoués, 1 sautés
 ```
 
 Suite — `bash tests/run-all.sh` → exit 1 sous la charge de sessions parallèles (load average 9 à 29 sur 8 cœurs) : 12 réussies dont `test_agent_scope_guard` et `test_paths` (shellcheck), `test_secret_scan` 128/128 au premier niveau ; le seul échec est `test_run_all`, dont la copie « claude absent » relance la suite et y voit le test de vitesse de secret-scan (3 000 fichiers en moins de 5 s, hook non modifié) dépasser le seuil (5,4 à 5,6 s mesurées sous charge) ; `test_run_all` seul, lancé entre-temps à charge 9,6 → exit 0, 31 réussis. `claude plugin validate --strict` ok sur `.` et `.claude-plugin/plugin.json`, coût permanent 0 token.
+
+### 2026-10-24 — agent `product-architect` (US-2)
+
+Généralisé depuis plugin-flutter (origine G) : une tâche produit bornée — rédiger `docs/product/PRD.md` depuis une description du besoin (draft) ou le reconstruire depuis le code d'un projet existant (reconstruct, depuis les chemins que la session donne), avec des critères d'acceptation AC-xxx numérotés, testables, jamais renumérotés. Dé-Flutterisé : plus de `lib/`, `test/` ni de flutter-architect ; le PRD est unique au projet quel que soit le nombre de parties ; un critère décrit un comportement vu par l'utilisateur, jamais la partie qui le sert ; les questions d'architecture, de dépendances, de plateformes ou de découpage vont en OPEN_QUESTIONS, adressées à l'architecte du plugin de la partie ou au project-architect. Le gabarit du PRD n'existant pas encore dans ce plugin, l'agent décrit l'en-tête fixe (statut DRAFT / REVIEW / APPROVED) au lieu de citer un chemin absent ; il n'écrit jamais APPROVED et sait que doc-status-guard repasse en REVIEW un PRD approuvé qu'il modifie. Rapport : bloc ACCEPTANCE_CRITERIA puis la queue commune du contrat de délégation (INTERFACE: 1, STATUS, FILES_CHANGED, COMMANDS_RUN, OPEN_QUESTIONS). Outils Read, Grep, Glob, Write, Edit ; modèle inherit ; portée `{write: ["docs/product/"], bash: []}` déclarée par `add-agent` dans `hooks/agent-scope.json`, tenue par agent-scope-guard. `pp.sh check-agent` : conforme.
+
+ROUGE — `bash tests/static/test_agent_product_architect.sh` (test posé par `pp.sh add-agent --test-only`) → exit 1 :
+
+```
+test_agent_product_architect : 0 réussis, 1 échoués, 0 sautés
+```
+
+Échec sur « agents/product-architect.md présent », l'agent n'existant pas encore.
+
+VERT — `bash tests/static/test_agent_product_architect.sh` → exit 0 :
+
+```
+test_agent_product_architect : 5 réussis, 0 échoués, 0 sautés
+```
+
+Suite — `bash tests/run-all.sh` → exit 0 : 15 réussies, 0 échouée, 1 sautée (`skills/` absent), `claude plugin validate --strict` ok sur `.`, `.claude-plugin/plugin.json` et `agents`, `test_agent_scope_guard` 103 réussis (sa section « agents déclarés » tient désormais product-architect à sa propre entrée), coût permanent 175 token (seuil 1 000).

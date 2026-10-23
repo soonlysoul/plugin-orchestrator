@@ -1,0 +1,6 @@
+{
+  "plugin-orchestrator:product-architect": {
+    "write": ["docs/product/"],
+    "bash": []
+  }
+}
