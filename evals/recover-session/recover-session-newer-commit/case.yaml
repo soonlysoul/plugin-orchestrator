@@ -1,0 +1,92 @@
+{
+  "schema_version": "1.0",
+  "name": "recover-session-newer-commit",
+  "description": "Demande de Soon, telle qu'il la tape (US-6) : reprendre un travail dont le dépôt a avancé après le checkpoint — un commit implémente l'étape 8 que le checkpoint ne coche pas ; le skill signale ce commit comme incohérence, relance la commande consignée (qui passe maintenant, alors que ROUGE est consigné), ne coche rien, ne commite rien et demande comment reprendre.",
+  "tags": [
+    "recover-session",
+    "positive"
+  ],
+  "runs": 3,
+  "expected_outcome": "Le skill recover-session est invoqué ; la réponse nomme le commit plus récent que last_commit, dit que `bash tests/notes_test.sh` passe désormais (exit 0) alors que le checkpoint consigne ROUGE, conclut que l'étape 8 semble faite sans la cocher, et demande l'accord avant de reprendre ; aucun commit, switch ni stash, aucun code ni test modifié.",
+  "context": {
+    "scaffold_script": "setup.sh"
+  },
+  "execution": {
+    "prompt": "reprends le travail là où il s'est arrêté",
+    "max_turns": 12,
+    "allowed_tools": [
+      "Skill",
+      "Read",
+      "Glob",
+      "Grep",
+      "Bash"
+    ]
+  },
+  "graders": [
+    {
+      "name": "skill-fired",
+      "type": "tool_used",
+      "tool": "Skill",
+      "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?recover-session\""
+    },
+    {
+      "name": "reruns-the-recorded-command",
+      "type": "tool_used",
+      "tool": "Bash",
+      "input_match": "bash tests/notes_test\\.sh",
+      "min": 1
+    },
+    {
+      "name": "no-git-state-change",
+      "type": "tool_used",
+      "tool": "Bash",
+      "input_match": "git (commit|switch|checkout|stash|restore|reset|add|clean)",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "name": "no-code-edit",
+      "type": "tool_used",
+      "tool": "Edit",
+      "input_match": "bin/|tests/",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "name": "no-code-write",
+      "type": "tool_used",
+      "tool": "Write",
+      "input_match": "bin/|tests/",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "name": "no-write-through-bash",
+      "type": "tool_used",
+      "tool": "Bash",
+      "input_match": "sed -i|python3|perl -i|tee |>\\s*(bin|tests|\\.forge)/|cat >",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "name": "not-the-full-suite",
+      "type": "tool_used",
+      "tool": "Bash",
+      "input_match": "tests/run-all\\.sh",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "name": "names-the-newer-commit",
+      "type": "regex",
+      "target": "last_message",
+      "pattern": "plus récent|newer|postérieur|list notes offline",
+      "flags": "i"
+    },
+    {
+      "name": "flags-without-deciding",
+      "type": "llm",
+      "criteria": "PASS if the reply flags, as an inconsistency, that HEAD holds a commit newer than the checkpoint's last_commit (feat(notes): list notes offline) which the checkpoint does not mention, says that rerunning the recorded command `bash tests/notes_test.sh` now passes (exit 0) whereas the checkpoint recorded RED, says that step 8 looks already done without ticking it, and asks the user how to resume (for example confirm step 8 and go on to step 9) before changing anything.\nFAIL if it ticks a step or rewrites the checkpoint's steps or next action, commits, changes bin/notes or a test, runs the whole test suite, ignores the newer commit, or resumes a step without asking.\n"
+    }
+  ]
+}

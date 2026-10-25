@@ -1,0 +1,42 @@
+{
+  "schema_version": "1.0",
+  "name": "recover-session-rebase-question",
+  "description": "Question voisine que Soon tape : reprendre un rebase interrompu est une question sur Git, pas la reprise d'un travail depuis un checkpoint.",
+  "tags": [
+    "recover-session",
+    "negative"
+  ],
+  "runs": 3,
+  "expected_outcome": "Le skill recover-session n'est pas invoqué ; la réponse explique git rebase --continue (et --abort, --skip) sans lire de checkpoint ni résumer l'état d'un workflow ; un git status pour voir si un rebase est en cours est admis.",
+  "execution": {
+    "prompt": "comment je reprends un rebase interrompu ?",
+    "max_turns": 4,
+    "allowed_tools": [
+      "Skill",
+      "Read"
+    ]
+  },
+  "graders": [
+    {
+      "name": "skill-not-fired",
+      "type": "tool_used",
+      "tool": "Skill",
+      "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?recover-session\"",
+      "min": 0,
+      "max": 0,
+      "arm": "both"
+    },
+    {
+      "name": "answers-with-rebase-continue",
+      "type": "regex",
+      "target": "last_message",
+      "pattern": "rebase\\s+--continue",
+      "flags": "i"
+    },
+    {
+      "name": "explains-without-recovering",
+      "type": "llm",
+      "criteria": "PASS if the reply explains how to continue, skip or abort an interrupted git rebase (git rebase --continue after resolving the conflicts, --skip, --abort). Checking with git status whether a rebase is in progress is fine.\nFAIL if it looks for or reads a .forge/checkpoint.md, summarizes a project's workflow state (skill, steps done, next action), or starts a recovery workflow instead of answering the question.\n"
+    }
+  ]
+}

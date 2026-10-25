@@ -1,0 +1,92 @@
+{
+  "schema_version": "1.0",
+  "name": "recover-session-interrupted-after-red",
+  "description": "Demande de Soon, telle qu'il la tape (US-6) : reprendre après une coupure, dans un projet .forge/ dont le checkpoint s'arrête après le ROUGE de create-feature ; le skill relit le checkpoint et Git, relance seulement la commande consignée (qui échoue, ROUGE attendu), résume en dix lignes au plus, propose l'étape 8 sans la faire et attend l'accord.",
+  "tags": [
+    "recover-session",
+    "positive"
+  ],
+  "runs": 3,
+  "expected_outcome": "Le skill recover-session est invoqué ; `bash tests/notes_test.sh` est relancée et rien d'autre (pas la suite complète) ; aucun fichier de code ou de test n'est écrit, aucun commit, switch ni stash ; la réponse dit ROUGE confirmé (exit 1, attendu), propose de reprendre à l'étape 8 et demande l'accord.",
+  "context": {
+    "scaffold_script": "setup.sh"
+  },
+  "execution": {
+    "prompt": "on s'est fait couper, reprends où on en était",
+    "max_turns": 12,
+    "allowed_tools": [
+      "Skill",
+      "Read",
+      "Glob",
+      "Grep",
+      "Bash"
+    ]
+  },
+  "graders": [
+    {
+      "name": "skill-fired",
+      "type": "tool_used",
+      "tool": "Skill",
+      "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?recover-session\""
+    },
+    {
+      "name": "reruns-the-recorded-command",
+      "type": "tool_used",
+      "tool": "Bash",
+      "input_match": "bash tests/notes_test\\.sh",
+      "min": 1
+    },
+    {
+      "name": "not-the-full-suite",
+      "type": "tool_used",
+      "tool": "Bash",
+      "input_match": "tests/run-all\\.sh",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "name": "no-git-state-change",
+      "type": "tool_used",
+      "tool": "Bash",
+      "input_match": "git (commit|switch|checkout|stash|restore|reset|add|clean)",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "name": "no-code-edit",
+      "type": "tool_used",
+      "tool": "Edit",
+      "input_match": "bin/|tests/",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "name": "no-code-write",
+      "type": "tool_used",
+      "tool": "Write",
+      "input_match": "bin/|tests/",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "name": "no-write-through-bash",
+      "type": "tool_used",
+      "tool": "Bash",
+      "input_match": "sed -i|python3|perl -i|tee |>\\s*(bin|tests|\\.forge)/|cat >",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "name": "proposes-step-8",
+      "type": "regex",
+      "target": "last_message",
+      "pattern": "(étape|step)\\s*8\\b",
+      "flags": "i"
+    },
+    {
+      "name": "confirms-red-and-waits",
+      "type": "llm",
+      "criteria": "PASS if the reply is a short summary (about ten lines) that says steps 1 to 7 of create-feature are done, that rerunning the recorded command `bash tests/notes_test.sh` still fails (exit 1) and that this is the expected RED, finds no inconsistency between the checkpoint and the repository, proposes to resume at step 8 (the minimal implementation) and asks the user to agree before doing anything.\nFAIL if it implements `list --offline`, changes bin/notes or a test, treats the failing test as a bug to fix, redoes a step already ticked, runs the whole test suite, commits, or resumes work without asking.\n"
+    }
+  ]
+}
