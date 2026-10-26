@@ -1,0 +1,83 @@
+{
+  "schema_version": "1.0",
+  "name": "github-workflow-pr-gh-not-logged-in",
+  "description": "Demande de Soon, telle qu'il la tape (US-5) : ouvrir la pull request d'une branche de travail finie, le push étant préautorisé et un remote origin présent, alors que gh n'a aucun identifiant (le bac à sable n'a ni HOME réel ni réseau) ; le skill vérifie gh avant tout geste, s'arrête, consigne le blocage dans .forge/checkpoint.md (skill: github-workflow), laisse `gh auth login` à l'utilisateur sans jeton, et ne pousse ni n'ouvre rien. Sans le skill, le modèle vérifie gh et s'arrête aussi, mais ne touche pas au checkpoint : c'est ce qui distingue le skill.",
+  "tags": [
+    "github-workflow",
+    "positive"
+  ],
+  "runs": 3,
+  "expected_outcome": "Le skill github-workflow est invoqué ; `gh auth status` est lancé et échoue ; aucun git push, aucun gh pr create, aucun gh auth login ni jeton ; .forge/checkpoint.md est réécrit avec le blocage ; la réponse dit que gh n'est pas connecté, demande à l'utilisateur de lancer gh auth login lui-même et dit que rien n'a été poussé ni ouvert.",
+  "context": {
+    "scaffold_script": "setup.sh"
+  },
+  "execution": {
+    "prompt": "ouvre une PR pour cette branche",
+    "max_turns": 10,
+    "allowed_tools": [
+      "Skill",
+      "Read",
+      "Glob",
+      "Grep",
+      "Bash"
+    ]
+  },
+  "graders": [
+    {
+      "name": "skill-fired",
+      "type": "tool_used",
+      "tool": "Skill",
+      "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?github-workflow\""
+    },
+    {
+      "name": "checks-gh-auth-first",
+      "type": "tool_used",
+      "tool": "Bash",
+      "input_match": "gh auth status",
+      "min": 1
+    },
+    {
+      "name": "no-push",
+      "type": "tool_used",
+      "tool": "Bash",
+      "input_match": "git push",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "name": "no-pull-request-created",
+      "type": "tool_used",
+      "tool": "Bash",
+      "input_match": "gh pr (create|edit)",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "name": "no-login-nor-token",
+      "type": "tool_used",
+      "tool": "Bash",
+      "input_match": "gh auth (login|token|setup-git)|--show-token|GH_TOKEN|GITHUB_TOKEN",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "name": "records-the-blocker-in-the-checkpoint",
+      "type": "tool_used",
+      "tool": "Bash",
+      "input_match": ">\\s*(\\./)?\\.forge/checkpoint\\.md|tee\\s+(-a\\s+)?(\\./)?\\.forge/checkpoint\\.md|sed -i[^\\n]*checkpoint\\.md|python3[^\\n]*checkpoint\\.md",
+      "min": 1
+    },
+    {
+      "name": "tells-the-user-to-log-in",
+      "type": "regex",
+      "target": "last_message",
+      "pattern": "gh auth login",
+      "flags": "i"
+    },
+    {
+      "name": "stops-without-publishing",
+      "type": "llm",
+      "criteria": "PASS if the reply says that gh is not logged in (or not usable), asks the user to run `gh auth login` themselves (in a terminal or with the `!` prefix), asks for no token, and makes clear that nothing was pushed and no pull request was opened.\nFAIL if the branch was pushed, if `gh pr create` was run, if Claude ran `gh auth login` itself, if it asks the user for a token or to paste one, or if it presents the pull request as opened.\n"
+    }
+  ]
+}

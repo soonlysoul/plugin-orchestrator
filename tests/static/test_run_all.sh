@@ -65,7 +65,7 @@ intact=$(copy_plugin intact)
 run_suite "$intact" PATH="$work/stub:$PATH" STUB_ALWAYS_ON=840
 expect_run "copie intacte : exit 0" 0
 expect_output "le bilan compte zéro échec" '^échouées : 0$'
-expect_output "le coût permanent est affiché" 'ok +coût permanent : 840 tokens \(seuil 1000\)'
+expect_output "le coût permanent est affiché" 'ok +coût permanent : 840 tokens \(seuil 2000\)'
 
 run_suite "$intact" PATH="$work/stub:$PATH" PLUGIN_UNDER_TEST="$work/nope"
 expect_run "PLUGIN_UNDER_TEST hérité : la suite vérifie quand même son propre dossier" 0
@@ -119,20 +119,20 @@ over_fail=$(copy_plugin over-fail) over_alert=$(copy_plugin over-alert)
 sed -i 's/^OVER_BUDGET=.*/OVER_BUDGET=fail/' "$over_fail/tests/run-all.sh"
 sed -i 's/^OVER_BUDGET=.*/OVER_BUDGET=alert/' "$over_alert/tests/run-all.sh"
 
-run_suite "$over_fail" PATH="$work/stub:$PATH" STUB_ALWAYS_ON=1.2k
-expect_run "OVER_BUDGET=fail, 1.2k tokens permanents : exit 1" 1
-expect_output "le dépassement est nommé" 'coût permanent : 1200 tokens, au-delà du seuil de 1000'
-expect_output "le dépassement est nommé au bilan" '^  - coût en contexte \(1200 tokens > 1000\)$'
-run_suite "$over_alert" PATH="$work/stub:$PATH" STUB_ALWAYS_ON=1.2k
-expect_run "OVER_BUDGET=alert, 1.2k tokens permanents : exit 0" 0
-expect_output "l'alerte est dite" 'alerte +coût permanent : 1200 tokens, au-delà du seuil de 1000'
+run_suite "$over_fail" PATH="$work/stub:$PATH" STUB_ALWAYS_ON=2.2k
+expect_run "OVER_BUDGET=fail, 2.2k tokens permanents : exit 1" 1
+expect_output "le dépassement est nommé" 'coût permanent : 2200 tokens, au-delà du seuil de 2000'
+expect_output "le dépassement est nommé au bilan" '^  - coût en contexte \(2200 tokens > 2000\)$'
+run_suite "$over_alert" PATH="$work/stub:$PATH" STUB_ALWAYS_ON=2.2k
+expect_run "OVER_BUDGET=alert, 2.2k tokens permanents : exit 0" 0
+expect_output "l'alerte est dite" 'alerte +coût permanent : 2200 tokens, au-delà du seuil de 2000'
 expect_output "l'alerte est comptée au bilan" '^alertes : 1$'
-expect_output "l'alerte est nommée au bilan" '^  - coût en contexte \(1200 tokens > 1000\)$'
+expect_output "l'alerte est nommée au bilan" '^  - coût en contexte \(2200 tokens > 2000\)$'
 expect_output "l'alerte n'est pas un échec" '^échouées : 0$'
-run_suite "$over_alert" PATH="$work/stub:$PATH" STUB_ALWAYS_ON=1,126
-expect_output "~1,126 tok : 1126 tokens, séparateur de milliers lu" 'coût permanent : 1126 tokens, au-delà du seuil de 1000'
-run_suite "$over_fail" PATH="$work/stub:$PATH" STUB_ALWAYS_ON=1k
-expect_run "1k tokens permanents, au seuil : exit 0" 0
+run_suite "$over_alert" PATH="$work/stub:$PATH" STUB_ALWAYS_ON=2,126
+expect_output "~2,126 tok : 2126 tokens, séparateur de milliers lu" 'coût permanent : 2126 tokens, au-delà du seuil de 2000'
+run_suite "$over_fail" PATH="$work/stub:$PATH" STUB_ALWAYS_ON=2k
+expect_run "2k tokens permanents, au seuil : exit 0" 0
 expect_output "au seuil : aucune alerte" '^alertes : 0$'
 
 finish

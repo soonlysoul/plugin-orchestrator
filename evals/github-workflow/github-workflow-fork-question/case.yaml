@@ -1,0 +1,42 @@
+{
+  "schema_version": "1.0",
+  "name": "github-workflow-fork-question",
+  "description": "Question voisine que Soon tape : comprendre ce qu'est un fork face à une branche est une question sur GitHub, ni un dépôt distant à créer, ni une CI, ni une pull request, ni un statut de checks.",
+  "tags": [
+    "github-workflow",
+    "negative"
+  ],
+  "runs": 3,
+  "expected_outcome": "Le skill github-workflow n'est pas invoqué ; la réponse explique fork et branche sans lancer ni proposer d'action GitHub sur un projet.",
+  "execution": {
+    "prompt": "c'est quoi la différence entre un fork et une branche sur GitHub ?",
+    "max_turns": 4,
+    "allowed_tools": [
+      "Skill",
+      "Read"
+    ]
+  },
+  "graders": [
+    {
+      "name": "skill-not-fired",
+      "type": "tool_used",
+      "tool": "Skill",
+      "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?github-workflow\"",
+      "min": 0,
+      "max": 0,
+      "arm": "both"
+    },
+    {
+      "name": "answers-about-forks",
+      "type": "regex",
+      "target": "last_message",
+      "pattern": "fork",
+      "flags": "i"
+    },
+    {
+      "name": "explains-without-acting",
+      "type": "llm",
+      "criteria": "PASS if the reply explains the difference between a fork (a copy of a repository under another account, with its own history and pull requests back to the original) and a branch (a line of development inside the same repository), as a plain answer. A harmless read-only look at the current repository is fine.\nFAIL if it starts a GitHub workflow on a project (remote repository, CI, pull request, checks), runs a gh command that changes anything, or asks the user what they want done to the project instead of answering.\n"
+    }
+  ]
+}

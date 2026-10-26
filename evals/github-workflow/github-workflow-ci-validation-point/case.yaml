@@ -1,0 +1,77 @@
+{
+  "schema_version": "1.0",
+  "name": "github-workflow-ci-validation-point",
+  "description": "Demande de Soon, telle qu'il la tape (US-5) : ajouter une CI à un projet mono-partie Flutter sans remote ni workflow ; le skill explique ce que la CI lancera (format, analyze, test de la toolchain de la partie), son coût, dit que le fichier de workflow est écrit par le devops de plugin-flutter sur mandat ci-template, demande l'accord et n'écrit rien.",
+  "tags": [
+    "github-workflow",
+    "positive"
+  ],
+  "runs": 3,
+  "expected_outcome": "Le skill github-workflow est invoqué ; aucun fichier sous .github/ n'est écrit ni commité ; la réponse explique la CI (format, analyze, test sur chaque PR et push vers main), parle du coût, nomme le devops de plugin-flutter comme auteur du gabarit (mandat) et demande l'accord avant d'aller plus loin.",
+  "context": {
+    "scaffold_script": "setup.sh"
+  },
+  "execution": {
+    "prompt": "ajoute une CI GitHub Actions au projet",
+    "max_turns": 10,
+    "allowed_tools": [
+      "Skill",
+      "Read",
+      "Glob",
+      "Grep",
+      "Bash"
+    ]
+  },
+  "graders": [
+    {
+      "name": "skill-fired",
+      "type": "tool_used",
+      "tool": "Skill",
+      "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?github-workflow\""
+    },
+    {
+      "name": "no-workflow-written-by-edit",
+      "type": "tool_used",
+      "tool": "Edit",
+      "input_match": "\"file_path\"\\s*:\\s*\"[^\"]*\\.github/",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "name": "no-workflow-written-by-write",
+      "type": "tool_used",
+      "tool": "Write",
+      "input_match": "\"file_path\"\\s*:\\s*\"[^\"]*\\.github/",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "name": "no-workflow-written-through-bash",
+      "type": "tool_used",
+      "tool": "Bash",
+      "input_match": "mkdir[^\\n]*\\.github|>\\s*(\\./)?\\.github|tee\\s+(\\./)?\\.github|cp\\s[^\\n]*\\.github/|\\.github/workflows/[^\\s]+\\s*<<|python3|perl -i|sed -i",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "name": "no-commit-nor-push",
+      "type": "tool_used",
+      "tool": "Bash",
+      "input_match": "git (commit|push)",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "name": "names-the-devops-mandate",
+      "type": "regex",
+      "target": "last_message",
+      "pattern": "devops|ci-template",
+      "flags": "i"
+    },
+    {
+      "name": "asks-before-writing",
+      "type": "llm",
+      "criteria": "PASS if the reply explains what the CI would run (the part's format, analyze and test commands, on every pull request and every push to main), mentions the cost of GitHub Actions minutes (free for a public repository; unknown until a remote exists, or given for the repository's visibility), says that the workflow file will be written by plugin-flutter's devops agent on a mandate and shown before any commit, asks the user for their approval and writes nothing.\nFAIL if a file under .github/ was written or committed, if the reply goes on without asking for approval, or if it never says what the CI would run.\n"
+    }
+  ]
+}

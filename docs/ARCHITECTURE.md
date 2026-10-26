@@ -23,15 +23,15 @@ Chaque composant répond à une user story ; aucun n'existe « au cas où ». Or
 | --- | --- | --- | --- | --- | --- | --- |
 | `bootstrap-project` | skill | US-1 | G | v0.1 (mono-partie), v0.2 (multi-parties) | Jugement : interview, choix de pile, approbations ; le scaffold de chaque partie est un mandat au plugin de langage | ~100 tokens (description) |
 | `create-feature` | skill | US-3 | G | v0.1 | Jugement : TDD en 15 étapes, paramétré par la `toolchain` de la partie | ~100 tokens |
-| `git-workflow` | skill | US-4 | R | v0.1 | Jugement : classes d'actions, staging explicite, Conventional Commits | ~80 tokens |
-| `github-workflow` | skill | US-5 | G | v0.1 | Jugement : points de validation (dépôt, PR, CI) ; commandes locales depuis la `toolchain`, builds et pose du gabarit CI au plugin de langage | ~90 tokens |
-| `recover-session` | skill | US-6 | G | v0.1 | Jugement : croiser checkpoint, Git et dépôt ; la commande relancée est celle consignée dans le checkpoint (exemples dé-Flutterisés) | ~70 tokens |
+| `git-workflow` | skill | US-4 | R | v0.1 | Jugement : classes d'actions, staging explicite, Conventional Commits | ~80 tokens (mesuré le 2026-10-24 : ~270) |
+| `github-workflow` | skill | US-5 | G | v0.1 | Jugement : points de validation (dépôt, PR, CI) ; commandes locales depuis la `toolchain`, builds et pose du gabarit CI au plugin de langage | ~90 tokens (mesuré le 2026-10-26 : ~260) |
+| `recover-session` | skill | US-6 | G | v0.1 | Jugement : croiser checkpoint, Git et dépôt ; la commande relancée est celle consignée dans le checkpoint (exemples dé-Flutterisés) | ~70 tokens (mesuré le 2026-10-25 : ~300) |
 | `debug-project` | skill | US-7 | G | v0.1 | Jugement : cause racine prouvée, régression ROUGE puis VERT, commandes depuis la `toolchain` | ~90 tokens |
 | `plan-feature` | skill | US-8 | N | v0.2 | Jugement : découpage en lots, ordre contrat → fournisseur → consommateur, mandats | ~90 tokens |
 | `run-feature` | skill | US-9 | N | v0.2 | Jugement : enchaîne `create-feature` lot par lot, vérifie chaque mandat au retour, s'arrête au premier échec | ~90 tokens |
 | `project-status` | skill | US-11 | N | v0.2 | Jugement : synthèse lecture seule (parties, mandats, documents, contrat) | ~70 tokens |
 | `release` | skill | US-12 | N | v0.3 | Jugement : vérifications par partie, versions, changelog, tags, accords | ~80 tokens |
-| `product-architect` | agent | US-2 | G | v0.1 | Tâche bornée : PRD produit (AC-xxx) ; dé-Flutterisé — reconstruct lit les chemins donnés par la session, les questions d'architecture vont à l'architecte du plugin de la partie | ~80 tokens |
+| `product-architect` | agent | US-2 | G | v0.1 | Tâche bornée : PRD produit (AC-xxx) ; dé-Flutterisé — reconstruct lit les chemins donnés par la session, les questions d'architecture vont à l'architecte du plugin de la partie | ~80 tokens (mesuré le 2026-10-24 : ~190) |
 | `project-architect` | agent | US-8, US-10 | N | v0.2 | Tâche bornée : architecture du découpage et contrat d'API, documents seulement | ~80 tokens |
 | `integration-reviewer` | agent | US-10 | N | v0.2 | Tâche bornée, lecture seule : écarts entre le contrat et ce que chaque partie expose/consomme | ~80 tokens |
 | `guard-destructive` | hook | US-13 | R | v0.1 | Déterministe : bloquer une commande destructive doit toujours se produire | 0 en contexte |
@@ -44,7 +44,7 @@ Chaque composant répond à une user story ; aucun n'existe « au cas où ». Or
 | `hooks/scripts/lib/shell-lexer.sh` | script | US-13 | R | v0.1 | Déterministe : analyseur de commandes partagé par guard-destructive et secret-scan | 0 |
 | `templates/` | gabarits | US-1, US-6, US-13 | voir « Gabarits » | v0.1 | Fichiers copiés ou remplis dans les projets, jamais exécutés | 0 |
 
-Serveur MCP : aucun. **Coût permanent total : ~1 100 tokens** de descriptions (10 skills + 3 agents) dans chaque session où le plugin est activé, en plus des plugins de langage.
+Serveur MCP : aucun. **Coût permanent total : ~1 100 tokens** de descriptions (10 skills + 3 agents) dans chaque session où le plugin est activé, en plus des plugins de langage. Amendement du 2026-10-26 : mesuré par `claude plugin details`, le style maison d'un en-tête de skill (Use when, not for, trois phrases citées, `when_to_use`) plafonne vers 250 tokens par skill, `argument-hint` ne comptant pas ; la v0.1 (six skills, un agent) se projette vers ~1 800 tokens et le seuil de `tests/run-all.sh` est relevé à 2 000 (alerte, jamais un échec).
 
 ## Gabarits
 

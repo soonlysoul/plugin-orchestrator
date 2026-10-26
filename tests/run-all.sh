@@ -12,7 +12,10 @@ command -v jq >/dev/null 2>&1 || { echo "bloqué : jq est requis par la suite et
 # Always-on context budget of a plugin of the model (PRD, « Coût en contexte »). Beyond it,
 # plugin-plugin's own suite fails (criterion 9); the scaffolding sets alert in the plugins it
 # produces, whose suite says so and still passes.
-MAX_ALWAYS_ON_TOKENS=1000
+# Raised from 1,000 to 2,000 on 2026-10-26: the house style of a skill header (Use when, not for,
+# three quoted triggers, when_to_use) floors each skill near 250 tokens, and v0.1 holds six skills
+# and one agent, about 1,800 tokens projected; the alert stays an alert.
+MAX_ALWAYS_ON_TOKENS=2000
 OVER_BUDGET=alert
 
 passed=() failed=() skipped=() blocked=() alerts=()
