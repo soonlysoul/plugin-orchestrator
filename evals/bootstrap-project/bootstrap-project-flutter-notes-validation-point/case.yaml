@@ -1,0 +1,66 @@
+{
+  "schema_version": "1.0",
+  "name": "bootstrap-project-flutter-notes-validation-point",
+  "description": "Demande de Soon, telle qu'il la tape (US-1) : démarrer un nouveau projet dans un dossier vide, une appli de notes en Flutter ; le skill vérifie les prérequis, propose l'identité du projet — nom, la partie unique et son plugin de langage (plugin-flutter, et s'il est activé dans cette session), les identifiants et plateformes de la partie, le périmètre de la première version, le dossier cible — puis demande confirmation et s'arrête sans rien créer : ni git init, ni flutter create, ni .forge/, ni document.",
+  "tags": [
+    "bootstrap-project",
+    "positive"
+  ],
+  "runs": 3,
+  "expected_outcome": "Le skill bootstrap-project est invoqué ; aucun fichier ni dossier n'est créé (pas de git init, flutter create, mkdir, redirection, orch.sh init) ; la réponse propose un nom, la partie avec plugin-flutter, le dossier cible et le périmètre, et demande à l'utilisateur de confirmer ou corriger avant toute création.",
+  "execution": {
+    "prompt": "démarre un nouveau projet : une appli de notes en Flutter",
+    "max_turns": 10,
+    "allowed_tools": [
+      "Skill",
+      "Read",
+      "Glob",
+      "Grep",
+      "Bash"
+    ]
+  },
+  "graders": [
+    {
+      "name": "skill-fired",
+      "type": "tool_used",
+      "tool": "Skill",
+      "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?bootstrap-project\""
+    },
+    {
+      "name": "nothing-created-through-bash",
+      "type": "tool_used",
+      "tool": "Bash",
+      "input_match": "git init|flutter create|dart create|mkdir|touch |cp |tee |cat >|>\\s*(\\./)?[A-Za-z_.]|sed -i|python3|perl -i|orch\\.sh (init|checkpoint|approve)",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "name": "no-write-tool",
+      "type": "tool_used",
+      "tool": "Write",
+      "input_match": "\"file_path\"",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "name": "no-edit-tool",
+      "type": "tool_used",
+      "tool": "Edit",
+      "input_match": "\"file_path\"",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "name": "names-the-language-plugin",
+      "type": "regex",
+      "target": "last_message",
+      "pattern": "plugin-flutter",
+      "flags": "i"
+    },
+    {
+      "name": "proposes-and-waits",
+      "type": "llm",
+      "criteria": "PASS if the reply is a validation point: it proposes a project name, the single part of the project with plugin-flutter as its language plugin (saying whether that plugin is available in this session), the identifiers and platforms that part needs, the scope of the first version in a few lines and the target directory, then asks the user to confirm or correct these values before anything is created, and nothing was created.\nFAIL if any file or directory was created, if `git init`, `flutter create` or a state-directory command ran, if a document or configuration was written, or if the reply goes on without asking for confirmation.\n"
+    }
+  ]
+}

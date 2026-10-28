@@ -1,0 +1,69 @@
+{
+  "schema_version": "1.0",
+  "name": "bootstrap-project-existing-app-adoption",
+  "description": "Demande de Soon, telle qu'il la tape (US-1) : démarrer un nouveau projet dans un dossier qui tient déjà une appli Flutter (pubspec.yaml, lib/, test/, dépôt Git) sans .forge/ ; le skill reconnaît un projet existant, dit que bootstrap-project ne sert qu'à un projet neuf, renvoie à l'adoption par le plugin de langage de l'appli (plugin-flutter, adopt-existing-project) et ne crée ni ne change rien.",
+  "tags": [
+    "bootstrap-project",
+    "positive"
+  ],
+  "runs": 3,
+  "expected_outcome": "Le skill bootstrap-project est invoqué ; aucun fichier ni dossier n'est créé ni modifié (pas de git init, flutter create, mkdir, redirection, orch.sh init) ; la réponse dit que le dossier tient déjà un projet, nomme adopt-existing-project de plugin-flutter comme chemin et s'arrête.",
+  "context": {
+    "scaffold_script": "setup.sh"
+  },
+  "execution": {
+    "prompt": "démarre un nouveau projet ici",
+    "max_turns": 10,
+    "allowed_tools": [
+      "Skill",
+      "Read",
+      "Glob",
+      "Grep",
+      "Bash"
+    ]
+  },
+  "graders": [
+    {
+      "name": "skill-fired",
+      "type": "tool_used",
+      "tool": "Skill",
+      "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?bootstrap-project\""
+    },
+    {
+      "name": "nothing-created-through-bash",
+      "type": "tool_used",
+      "tool": "Bash",
+      "input_match": "git init|flutter create|dart create|mkdir|touch |cp |tee |cat >|>\\s*(\\./)?[A-Za-z_.]|sed -i|python3|perl -i|orch\\.sh (init|checkpoint|approve)",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "name": "no-write-tool",
+      "type": "tool_used",
+      "tool": "Write",
+      "input_match": "\"file_path\"",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "name": "no-edit-tool",
+      "type": "tool_used",
+      "tool": "Edit",
+      "input_match": "\"file_path\"",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "name": "names-the-adoption-workflow",
+      "type": "regex",
+      "target": "last_message",
+      "pattern": "adopt-existing-project",
+      "flags": "i"
+    },
+    {
+      "name": "refuses-and-points-to-adoption",
+      "type": "llm",
+      "criteria": "PASS if the reply says that this folder already holds a project (a Flutter app: pubspec.yaml, lib/, a Git history), that a new project is not started there, points to the adoption workflow of the app's language plugin (plugin-flutter's adopt-existing-project) as the way to bring the project under the plugins, and creates or changes nothing.\nFAIL if a project was created in this folder or in a subfolder, if `git init`, `flutter create` or a state-directory command ran, if any file was written or changed, or if the reply proposes to overwrite the existing app.\n"
+    }
+  ]
+}

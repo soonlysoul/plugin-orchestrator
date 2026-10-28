@@ -1,0 +1,42 @@
+{
+  "schema_version": "1.0",
+  "name": "bootstrap-project-prd-trd-question",
+  "description": "Question voisine que Soon tape : comprendre ce qui distingue un PRD d'un TRD est une question sur les documents, ni un projet à démarrer, ni une identité à proposer, ni un dossier à créer.",
+  "tags": [
+    "bootstrap-project",
+    "negative"
+  ],
+  "runs": 3,
+  "expected_outcome": "Le skill bootstrap-project n'est pas invoqué ; la réponse explique la différence entre un PRD et un TRD sans démarrer ni proposer de démarrer un projet.",
+  "execution": {
+    "prompt": "c'est quoi la différence entre un PRD et un TRD ?",
+    "max_turns": 4,
+    "allowed_tools": [
+      "Skill",
+      "Read"
+    ]
+  },
+  "graders": [
+    {
+      "name": "skill-not-fired",
+      "type": "tool_used",
+      "tool": "Skill",
+      "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?bootstrap-project\"",
+      "min": 0,
+      "max": 0,
+      "arm": "both"
+    },
+    {
+      "name": "answers-about-the-documents",
+      "type": "regex",
+      "target": "last_message",
+      "pattern": "PRD",
+      "flags": "i"
+    },
+    {
+      "name": "explains-without-starting",
+      "type": "llm",
+      "criteria": "PASS if the reply explains the difference between a product requirements document (what the software must do and for whom, with acceptance criteria) and a technical requirements document (how it is built: architecture, stack, constraints), without starting a project, proposing a project name or identity, creating a file or asking in which directory to create something.\nFAIL if it starts or offers to start a project bootstrap, asks for a project name, organization or platforms, or creates any file.\n"
+    }
+  ]
+}
