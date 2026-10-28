@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # templates/: the files copied or filled into the projects, never run — the checkpoint format,
 # the project configuration (schema 2, parts), the generic permission rules, and the document
-# templates (PRD; DECISIONS.md and CLAUDE.md come with bootstrap-project, their only consumer) at
+# templates (PRD, DECISIONS, and the CLAUDE.md conventions file, consumed by bootstrap-project) at
 # the fixed header that doc-status-guard and scripts/orch.sh approve read. Generic: nothing of a
 # language in them; the scaffold of the language plugin brings its own fragment.
 # shellcheck source=../lib.sh
@@ -138,14 +138,14 @@ fi
 
 echo "# doc-templates"
 D="$T/doc-templates"
-for name in PRD; do
+for name in PRD DECISIONS; do
   [[ -f $D/$name.md ]] && pass "doc-templates/$name.md présent" || fail "doc-templates/$name.md présent"
 done
 if [[ -f $LIB ]]; then
   # shellcheck source=../../scripts/lib/doc-status.sh
   source "$LIB"
 fi
-for name in PRD; do
+for name in PRD DECISIONS; do
   f="$D/$name.md"
   [[ -f $f ]] || continue
   for row in "| Objective |" "| Status | DRAFT |" "| Approved |" "| Assumptions |" "| Confirmed decisions |" "| Related documents |" "| Verification criteria |"; do
@@ -166,15 +166,34 @@ if [[ -f $PRD ]]; then
   done
   lacks "PRD.md : plus de plan d'implémentation en document lié (il est par partie)" "$PRD" "IMPLEMENTATION_PLAN"
 fi
+DECISIONS="$D/DECISIONS.md"
+if [[ -f $DECISIONS ]]; then
+  for needle in "# Decisions —" "## ADR-001 — Initial stack" "- Parts concerned:" "docs/product/PRD.md"; do
+    has "DECISIONS.md : $needle" "$DECISIONS" "$needle"
+  done
+  lacks "DECISIONS.md : plus de « Platforms checked » (les plateformes sont l'affaire du plugin de langage)" "$DECISIONS" "Platforms checked"
+fi
+echo "# CLAUDE.md (conventions du projet, sans ligne de statut : pas un document projet)"
+CONVENTIONS="$D/CLAUDE.md"
+if [[ -f $CONVENTIONS ]]; then
+  pass "doc-templates/CLAUDE.md présent"
+  for needle in "plugin-orchestrator" "/plugin-orchestrator:create-feature" "/plugin-orchestrator:git-workflow" "/plugin-orchestrator:github-workflow" "/plugin-orchestrator:recover-session" ".forge/checkpoint.md" ".forge/config.yaml" "toolchain" "APPROVED"; do
+    has "CLAUDE.md : $needle" "$CONVENTIONS" "$needle"
+  done
+  lacks "CLAUDE.md : aucune ligne de statut" "$CONVENTIONS" "| Status |"
+else
+  fail "doc-templates/CLAUDE.md présent"
+fi
 echo "# générique"
 language=$(grep -rniE 'flutter|\bdart\b|pubspec|lib/features' "$T" 2>/dev/null)
 [[ -z $language ]] && pass "aucun gabarit ne nomme un langage" || fail "aucun gabarit ne nomme un langage" "$(head -n 3 <<<"$language")"
 
 echo "# les gabarits de documents s'approuvent par orch.sh approve"
 if [[ -f $ORCH && -f $LIB ]]; then
-  mkdir -p "$work/app/.forge" "$work/app/docs/product"
+  mkdir -p "$work/app/.forge" "$work/app/docs/product" "$work/app/docs/engineering"
   cp "$D/PRD.md" "$work/app/docs/product/PRD.md" 2>/dev/null
-  for rel in docs/product/PRD.md; do
+  cp "$D/DECISIONS.md" "$work/app/docs/engineering/DECISIONS.md" 2>/dev/null
+  for rel in docs/product/PRD.md docs/engineering/DECISIONS.md; do
     if [[ ! -f $work/app/$rel ]]; then
       fail "$rel : approuvé par orch.sh approve" "gabarit absent"
       continue
