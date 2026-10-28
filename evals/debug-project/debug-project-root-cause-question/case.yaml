@@ -1,0 +1,45 @@
+{
+  "schema_version": "1.0",
+  "name": "debug-project-root-cause-question",
+  "description": "Question voisine que Soon tape, dans un projet .forge/ où tout est vert : la différence entre corriger la cause racine et corriger le symptôme est une question de méthode, pas une panne à diagnostiquer.",
+  "tags": [
+    "debug-project",
+    "negative"
+  ],
+  "runs": 3,
+  "expected_outcome": "Le skill debug-project n'est pas invoqué ; la réponse explique la différence — le symptôme est ce qu'on observe (l'erreur, le test rouge), la cause racine est le défaut qui le produit, établi par une preuve ; corriger le symptôme fait taire l'erreur sans retirer le défaut — sans lancer les tests ni lire le projet pour diagnostiquer.",
+  "context": {
+    "scaffold_script": "setup.sh"
+  },
+  "execution": {
+    "prompt": "c'est quoi la différence entre corriger la cause racine et corriger le symptôme ?",
+    "max_turns": 4,
+    "allowed_tools": [
+      "Skill",
+      "Read"
+    ]
+  },
+  "graders": [
+    {
+      "name": "skill-not-fired",
+      "type": "tool_used",
+      "tool": "Skill",
+      "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?debug-project\"",
+      "min": 0,
+      "max": 0,
+      "arm": "both"
+    },
+    {
+      "name": "answers-about-the-root-cause",
+      "type": "regex",
+      "target": "last_message",
+      "pattern": "racine|root cause",
+      "flags": "i"
+    },
+    {
+      "name": "explains-without-debugging",
+      "type": "llm",
+      "criteria": "PASS if the reply explains the difference: the symptom is what is observed (an error message, a failing test, a crash), the root cause is the defect that produces it, established with evidence (a stack frame, a diff, a reproduction); fixing the symptom silences the failure — a try/catch, a skipped or loosened test, a special case — while the defect stays and resurfaces elsewhere; fixing the root cause removes it, ideally with a regression test that fails before the fix and passes after. An example is fine; mentioning the project's workflow in one line is fine.\nFAIL if it starts a debugging workflow, runs or claims to run the tests, reads the project's code or history to diagnose something, or proposes a fix to the project.\n"
+    }
+  ]
+}

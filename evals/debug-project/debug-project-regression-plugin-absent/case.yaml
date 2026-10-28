@@ -1,0 +1,83 @@
+{
+  "schema_version": "1.0",
+  "name": "debug-project-regression-plugin-absent",
+  "description": "Demande de Soon, telle qu'il la tape (US-7) : dans un projet .forge/ mono-partie (CLI shell, plugin-shell), les tests ne passent plus depuis son dernier commit, `refactor(notes): reject an empty note`, qui a retiré au passage le saut de ligne du format printf de `notes add`. Le skill reproduit l'échec avec la toolchain de la partie (bash tests/run-all.sh → exit 1, test d'AC-001), nomme la classe (assertion : attendu « buy milk / call mom », obtenu « buy milkcall mom »), prouve la cause racine par l'historique (git log et diff du dernier commit), retient le test existant comme test de régression (ROUGE), borne le correctif à bin/notes, et s'arrête là : plugin-shell n'est pas dans la session — ni branche, ni correctif, ni commit.",
+  "tags": [
+    "debug-project",
+    "positive"
+  ],
+  "runs": 3,
+  "expected_outcome": "Le skill debug-project est invoqué ; aucun fichier sous bin/, tests/, tools/ ou docs/ n'est écrit, aucune branche, aucun commit, ni revert ni stash ; le checkpoint est tenu par orch.sh checkpoint ; la réponse donne la commande reproduite et son code de sortie, la cause racine en une phrase avec sa preuve (le dernier commit et la ligne du printf qui a perdu son saut de ligne), le test existant tests/base_test.sh comme test de régression, le correctif prévu dans bin/notes, et nomme plugin-shell comme ce qui manque pour aller au correctif, sans rien corriger.",
+  "context": {
+    "scaffold_script": "setup.sh"
+  },
+  "execution": {
+    "prompt": "les tests ne passent plus depuis mon dernier commit",
+    "max_turns": 20,
+    "allowed_tools": [
+      "Skill",
+      "Read",
+      "Glob",
+      "Grep",
+      "Bash"
+    ]
+  },
+  "graders": [
+    {
+      "name": "skill-fired",
+      "type": "tool_used",
+      "tool": "Skill",
+      "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?debug-project\""
+    },
+    {
+      "name": "no-code-edit",
+      "type": "tool_used",
+      "tool": "Edit",
+      "input_match": "\"file_path\"\\s*:\\s*\"[^\"]*((bin|tests|tools|docs)/|deps\\.)",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "name": "no-code-write",
+      "type": "tool_used",
+      "tool": "Write",
+      "input_match": "\"file_path\"\\s*:\\s*\"[^\"]*((bin|tests|tools|docs)/|deps\\.)",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "name": "no-write-through-bash",
+      "type": "tool_used",
+      "tool": "Bash",
+      "input_match": "sed -i|python3|perl -i|tee\\s+(\\./)?(bin|tests|tools|docs|deps)|>\\s*(\\./)?(bin|tests|tools|docs)/|>\\s*(\\./)?deps\\.|add-dep\\.sh|format\\.sh --fix",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "name": "no-git-change",
+      "type": "tool_used",
+      "tool": "Bash",
+      "input_match": "(\"command\"\\s*:\\s*\"|&&\\s*|;\\s*|\\|\\|\\s*)git\\s+(-C\\s+\\S+\\s+)?(switch|checkout|commit|stash|add|merge|push|reset|restore|revert|bisect|cherry-pick|apply|rm|mv)\\b",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "name": "checkpoint-recorded-by-orch",
+      "type": "tool_used",
+      "tool": "Bash",
+      "input_match": "orch\\.sh checkpoint",
+      "min": 1
+    },
+    {
+      "name": "names-the-missing-plugin",
+      "type": "regex",
+      "target": "last_message",
+      "pattern": "plugin-shell"
+    },
+    {
+      "name": "root-cause-proved-then-stops-on-the-missing-plugin",
+      "type": "llm",
+      "criteria": "PASS if the reply (1) reproduces the failure with the part's test command (`bash tests/run-all.sh`, the toolchain of .forge/config.yaml) and gives its exit code (1) and the failing test (AC-001 in tests/base_test.sh, output `buy milkcall mom`); (2) states the root cause in one sentence with evidence from Git: the last commit, `refactor(notes): reject an empty note` (its hash or its subject), changed the printf format of `notes add` from '%s\\n' to '%s', so each note is appended without a newline and the notes run together — the diff line, the commit or a narrower run shown as proof; (3) says that the existing failing test already reproduces the bug and serves as the regression test, RED, and that the fix is the newline restored in bin/notes, nothing else; (4) says that the part's language plugin plugin-shell is not available in this session, so the fix — branch, change, GREEN, review by its code-reviewer, commit — waits for it, and how to go on (enable it, open a new session, resume). Reading files, running the tests, read-only git commands and recording the diagnosis in .forge/checkpoint.md through the orchestrator's script are fine.\nFAIL if it edits bin/notes or any other file of the project, reverts, stashes, creates a branch or commits; if it claims the failure is fixed; if it states a cause without evidence from the history or the code; or if it goes on with a fix as if the language plugin were present.\n"
+    }
+  ]
+}

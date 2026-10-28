@@ -1,0 +1,96 @@
+{
+  "schema_version": "1.0",
+  "name": "debug-project-expected-red",
+  "description": "Demande de Soon, telle qu'il la tape (US-7), dans un projet .forge/ où create-feature s'est arrêté juste après le ROUGE d'AC-002 (étape 7) : branche feature/AC-002-offline-notes-list, test tests/notes_test.sh non commité, checkpoint de create-feature modifié et non commité. Soon demande de corriger les tests ; le skill lit le checkpoint avant tout, voit que le seul test en échec est le ROUGE attendu consigné à l'étape 7 — l'état normal du TDD avant l'implémentation minimale, pas une panne à corriger — et le rend à create-feature (étape 8, reprise par recover-session), sans rien corriger ni écraser le checkpoint de create-feature. Réécrit après le ROUGE du 2026-10-28 : sur « les tests échouent, tu peux regarder ? », le modèle sans le skill passait déjà les juges.",
+  "tags": [
+    "debug-project",
+    "positive"
+  ],
+  "runs": 3,
+  "expected_outcome": "Le skill debug-project est invoqué ; aucun fichier sous bin/, tests/, tools/ ou docs/ n'est écrit, aucun changement de branche ni commit ; orch.sh checkpoint start n'est jamais lancé (il écraserait le checkpoint de create-feature) ; la réponse dit que l'échec de tests/notes_test.sh est le ROUGE attendu d'AC-002 consigné par create-feature, que le test d'AC-001 passe, que la correction demandée est l'étape 8 de create-feature et non un correctif, et que recover-session la reprend.",
+  "context": {
+    "scaffold_script": "setup.sh"
+  },
+  "execution": {
+    "prompt": "les tests échouent, corrige-les",
+    "max_turns": 16,
+    "allowed_tools": [
+      "Skill",
+      "Read",
+      "Glob",
+      "Grep",
+      "Bash"
+    ]
+  },
+  "graders": [
+    {
+      "name": "skill-fired",
+      "type": "tool_used",
+      "tool": "Skill",
+      "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?debug-project\""
+    },
+    {
+      "name": "no-code-edit",
+      "type": "tool_used",
+      "tool": "Edit",
+      "input_match": "\"file_path\"\\s*:\\s*\"[^\"]*((bin|tests|tools|docs)/|deps\\.)",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "name": "no-code-write",
+      "type": "tool_used",
+      "tool": "Write",
+      "input_match": "\"file_path\"\\s*:\\s*\"[^\"]*((bin|tests|tools|docs)/|deps\\.)",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "name": "no-write-through-bash",
+      "type": "tool_used",
+      "tool": "Bash",
+      "input_match": "sed -i|python3|perl -i|tee\\s+(\\./)?(bin|tests|tools|docs|deps)|>\\s*(\\./)?(bin|tests|tools|docs)/|>\\s*(\\./)?deps\\.|add-dep\\.sh|format\\.sh --fix",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "name": "no-git-change",
+      "type": "tool_used",
+      "tool": "Bash",
+      "input_match": "(\"command\"\\s*:\\s*\"|&&\\s*|;\\s*|\\|\\|\\s*)git\\s+(-C\\s+\\S+\\s+)?(switch|checkout|commit|stash|add|merge|push|reset|restore|revert|bisect|cherry-pick|apply|rm|mv)\\b",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "name": "create-feature-checkpoint-kept",
+      "type": "tool_used",
+      "tool": "Bash",
+      "input_match": "orch\\.sh checkpoint\\s+\\S+\\s+start",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "name": "targets-ac-002",
+      "type": "regex",
+      "target": "last_message",
+      "pattern": "AC-002"
+    },
+    {
+      "name": "names-create-feature",
+      "type": "regex",
+      "target": "last_message",
+      "pattern": "create-feature"
+    },
+    {
+      "name": "expected-red-handed-back",
+      "type": "llm",
+      "criteria": "PASS if the reply establishes, from running the tests or from .forge/checkpoint.md, that the only failing test is tests/notes_test.sh (AC-002: `notes list --offline` is not implemented yet, `unknown option: --offline`) while the AC-001 test passes; recognises from the checkpoint that this failure is the expected RED of create-feature for AC-002, recorded at its step 7 on branch feature/AC-002-offline-notes-list — the normal state of TDD before the minimal implementation, not a bug to fix; says that making it pass is create-feature's step 8, the minimal implementation of `notes list --offline`, not a fix, and that recover-session resumes that workflow from its checkpoint; and changes nothing. Reading files, running the tests and read-only git commands are fine; asking whether to resume create-feature is fine.\nFAIL if it implements --offline in bin/notes or starts doing so, treats the failure as a bug and fixes it, edits or removes the test, rewrites the checkpoint as a new run that replaces create-feature's, switches branch, stashes or commits.\n"
+    },
+    {
+      "name": "names-recover-session",
+      "type": "regex",
+      "target": "last_message",
+      "pattern": "recover-session"
+    }
+  ]
+}
