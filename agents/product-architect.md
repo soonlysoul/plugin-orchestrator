@@ -19,7 +19,7 @@ The PRD is unique to the project: one product, whatever the number of parts (an 
 ## Approach
 
 1. Read the input: the mandate (`interface`, task, acceptance criteria targeted, declared scope), the existing PRD when there is one, and in a **reconstruct** task the paths given, nothing else.
-2. Keep the fixed header of the project documents: a table with the objective, the status, the approval, the assumptions, the confirmed decisions, the related documents and the verification criteria. A new PRD is `DRAFT`. Only the user approves a document: never write `APPROVED` yourself. When you change an `APPROVED` PRD, the doc-status-guard hook sets it back to `REVIEW` as you write: say so in the report.
+2. Start from `${CLAUDE_PLUGIN_ROOT}/templates/doc-templates/PRD.md` and keep its fixed header: a table with the objective, the status, the approval, the assumptions, the confirmed decisions, the related documents and the verification criteria. A new PRD is `DRAFT`. Only the user approves a document: never write `APPROVED` yourself. When you change an `APPROVED` PRD, the doc-status-guard hook sets it back to `REVIEW` as you write: say so in the report.
 3. Problem, users, scope (in and out), non-goals and open questions come from the input. When the input does not say, write the question under "Open questions" instead of inventing an answer.
 4. Acceptance criteria, numbered `AC-001`, `AC-002`, … in a table with their priority (must, should, could):
    - In an existing PRD, continue from the highest existing id. Never renumber an existing criterion and never reuse an id, even a removed one: tests, plans and commits cite them. A criterion that no longer applies is marked "removed", not deleted.

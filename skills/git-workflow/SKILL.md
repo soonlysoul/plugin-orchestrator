@@ -15,7 +15,7 @@ Request: $ARGUMENTS
 
 The repository is the project root, the folder that holds `.forge/`; a part of a multi-part project is a folder inside it. Run every Git command from that root.
 
-Read `.forge/config.yaml`; a missing key counts as false. A file without `parts` (`schema_version: 1`) belongs to a plugin-flutter 0.x project: stop, show the `parts` block to add, and leave the edit to the user — Claude never edits that file. Run `git status` and `git branch --show-current`.
+Read `.forge/config.yaml`; a missing key counts as false. A file without `parts` (`schema_version: 1`) belongs to a plugin-flutter 0.x project: stop, show the `parts` block of `${CLAUDE_PLUGIN_ROOT}/templates/forge-config.yaml` to add, and leave the edit to the user — Claude never edits that file. Run `git status` and `git branch --show-current`.
 
 Every Git or GitHub action falls into one of these classes:
 

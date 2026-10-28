@@ -19,7 +19,7 @@ The project root is the folder that holds `.forge/`: the argument, else the near
 
 ## Step 1 — Read the checkpoint
 
-Read `.forge/checkpoint.md`: `skill`, `feature`, `branch`, `last_commit`, the ticked steps with their commands and exit codes, the test results table, the next action, the blockers. Without a checkpoint, rebuild the state from `git log --oneline -20`, `git branch --show-current` and `git status --porcelain`, say that there was no checkpoint, and ask which workflow to resume: never guess one.
+Read `.forge/checkpoint.md` (format: `${CLAUDE_PLUGIN_ROOT}/templates/checkpoint.md`): `skill`, `feature`, `branch`, `last_commit`, the ticked steps with their commands and exit codes, the test results table, the next action, the blockers. Without a checkpoint, rebuild the state from `git log --oneline -20`, `git branch --show-current` and `git status --porcelain`, say that there was no checkpoint, and ask which workflow to resume: never guess one.
 
 ## Step 2 — Compare with the repository
 
@@ -56,7 +56,7 @@ Present at most ten lines:
 
 Ask whether to resume from that step, then stop and wait. A blocker, another branch, newer commits or uncommitted changes: name them and let the user decide before resuming; a checkout needs agreement; never stash.
 
-When the checkpoint-reminder hook asks for a checkpoint update during recovery, change only `updated:` and add a line under "Blockers / open questions" that records the recovery and its inconsistencies; change nothing else before the user agrees.
+When the checkpoint-reminder hook asks for a checkpoint update during recovery, change only `updated:` and add a line under "Blockers / open questions" that records the recovery and its inconsistencies — `bash ${CLAUDE_PLUGIN_ROOT}/scripts/orch.sh checkpoint <project root> block "<recovery and its inconsistencies>"` does exactly that; change nothing else before the user agrees.
 
 ## After the agreement
 

@@ -1,0 +1,32 @@
+# plugin-orchestrator project configuration. Edited by the user only.
+# A missing key counts as false. Once .claude/settings.json is installed, its deny rule
+# Edit(./.forge/config.yaml) stops Claude from changing this file, and the protect-sensitive hook
+# asks before any write to it.
+schema_version: 2
+project:
+  default_branch: main
+  branch_prefix: feature/
+authorizations:
+  push_feature_branches: false
+  open_pull_requests: false
+  update_own_pull_requests: false
+  create_remote_repo: false     # always re-confirmed: name, visibility, owner
+  merge: false                  # ignored: merging always needs explicit approval
+  publish_release: false        # ignored: publishing always needs explicit approval
+# One entry per part of the project; a single-part project has one, whose path is the root (.).
+# A mechanical gesture is a toolchain key, run by the orchestrator's workflows; anything that
+# needs to understand the language is a mandate to an agent of the part's language plugin.
+parts:
+  app:
+    path: .
+    plugin: <language plugin of this part>
+    # The delegation interface, echoed by every agent of that plugin as INTERFACE: 1.
+    interface: 1
+    toolchain:
+      test: <test command>
+      format: <format command>
+      analyze: <static analysis command>
+      add_dep: <command that adds a dependency>
+      manifests: [<dependency manifest>, <lockfile>]   # staged when a dependency changes
+      # integration_test: <command that runs the integration tests on a device>   # optional
+    # platforms: [<platform>, <platform>]   # optional, specific to the language plugin
