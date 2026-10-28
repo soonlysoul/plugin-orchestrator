@@ -72,7 +72,7 @@ C'est l'interface la plus importante du plugin : ce que l'orchestrateur envoie �
 - `write-tests` (→ `<plugin>:test-engineer`) : plan, API publique (signatures), chemins des fichiers de tests, device pour les tests d'intégration ou « blocked » avec la raison ;
 - `review` (→ `<plugin>:code-reviewer`) : les arguments git du diff (`--cached <branche par défaut>` ou une plage), jamais le raisonnement de l'implémentation ;
 - `check-dependency` (→ l'architecte du plugin) : le paquet ajouté, les plateformes/cibles activées de la partie — la vérification de compatibilité est un jugement de langage, pas une clé de toolchain ;
-- `scaffold` (→ le plugin de langage, à bootstrap) : nom, identifiants, plateformes/cibles ; comprend la création du squelette, le TRD, le fragment de permissions, le gabarit CI et le test de base.
+- `scaffold` (→ le plugin de langage, à bootstrap) : nom, identifiants, plateformes/cibles ; comprend la création du squelette, le TRD, le fragment de permissions, le gabarit CI et le test de base. Amendement du 2026-10-28 : l'agent destinataire n'est pas nommé — `bootstrap-project` mandate « l'agent que le plugin expose pour le scaffold » — et le skill s'arrête devant un plugin sans scaffold à l'interface 1 (plugin-flutter 0.x, dont le bootstrap fait tout lui-même), nommé avec la mise à jour qu'il lui faut, Git et `.forge/` en place.
 
 **Rapport sortant.** Tout agent délégué termine par un bloc fixe : ses sections propres (pour `review` : `FINDINGS` bloquant/important/mineur avec `fichier:ligne`, `DOCS_TO_UPDATE`, `DIVERGENCES` ; pour un PRD : `ACCEPTANCE_CRITERIA` ; pour `write-tests` : la sortie ROUGE brute avec commande et code de sortie), puis la queue commune :
 
@@ -84,7 +84,7 @@ COMMANDS_RUN: `<commande>` → exit <code>
 OPEN_QUESTIONS: …
 ```
 
-L'orchestrateur parse ces blocs (l'étape revue de `create-feature` décide sur `FINDINGS`, l'étape docs sur `DOCS_TO_UPDATE` et `DIVERGENCES`) et vérifie chaque affirmation importante avant de la présenter comme un fait.
+L'orchestrateur parse ces blocs (l'étape revue de `create-feature` décide sur `FINDINGS`, l'étape docs sur `DOCS_TO_UPDATE` et `DIVERGENCES`) et vérifie chaque affirmation importante avant de la présenter comme un fait. Amendement du 2026-10-28 : le rapport d'un mandat `scaffold` ajoute au contrat v1 les blocs `TOOLCHAIN`, `PERMISSIONS`, `VERSIONS` et `TARGETS`, placés avant `INTERFACE: 1` (après `SCAFFOLD`, sa section propre) — les lignes de `TOOLCHAIN` entrent telles quelles dans `config.yaml`, `PERMISSIONS` est le fragment du plugin, rendu dans le rapport et jamais écrit par lui, `VERSIONS` va dans `ADR-001`, et une cible de `TARGETS` n'est construite qu'avec sa commande dans `COMMANDS_RUN` ; spécification : `skills/bootstrap-project/reference/scaffold-mandate.md`.
 
 **Versionnement.** La version d'interface est déclarée par partie dans `config.yaml` (`interface: 1`), envoyée dans chaque mandat, et **répétée** par l'agent dans `INTERFACE:`. Une ligne absente (plugin pré-migration) ou différente arrête le workflow en nommant le plugin et la version requise — c'est aussi le mécanisme de détection d'un plugin-flutter 0.x. Réciproquement, les skills restantes de plugin-flutter vérifient la présence de l'orchestrateur et s'arrêtent proprement sans lui. Les dépendances entre plugins ne sont pas déclarables dans le modèle : tout se vérifie à l'exécution.
 
@@ -160,7 +160,7 @@ Ce que « G » change concrètement, composant par composant :
 - **`debug-project`** : reproduction et régression via `toolchain` ; le diagnostic d'un comportement propre au langage peut devenir un mandat à l'architecte du plugin.
 - **`github-workflow`** : les préconditions de `pr` et les vérifications locales de `ci` lancent `format`, `analyze`, `test` de chaque partie concernée ; la pose du gabarit CI et les builds restent des mandats au plugin de langage (son devops) ; le corps de PR garde les quatre catégories de tests, et sa table des plateformes n'apparaît que pour une partie qui déclare `platforms`.
 - **`recover-session`** : la commande relancée est celle consignée dans le checkpoint (déjà générique) ; exemples dé-Flutterisés.
-- **`bootstrap-project`** : interview, structure, documents racine, `.forge/`, règles de permission génériques ; puis un mandat `scaffold` par partie.
+- **`bootstrap-project`** : interview, structure, documents racine, `.forge/`, règles de permission génériques ; puis un mandat `scaffold` par partie. Amendement du 2026-10-28 : la v0.1 est mono-partie — une seule partie, `path: .`, un seul mandat `scaffold` ; une demande à plusieurs parties arrête le workflow, nommée, le bootstrap multi-parties venant avec la couche de coordination (v0.2).
 - **`product-architect`** : corps dé-Flutterisé (plus de référence à `lib/`, `test/` ni au flutter-architect).
 
 ## État persistant et documents
