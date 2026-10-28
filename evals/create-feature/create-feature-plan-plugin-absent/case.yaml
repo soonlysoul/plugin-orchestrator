@@ -1,0 +1,97 @@
+{
+  "schema_version": "1.0",
+  "name": "create-feature-plan-plugin-absent",
+  "description": "Demande de Soon, telle qu'il la tape (US-3) : implémenter AC-002 dans un projet .forge/ mono-partie (CLI shell, plugin-shell) dont le PRD et le TRD sont APPROVED ; le skill vérifie le dépôt, lit le PRD, le TRD de la partie et l'entrée du plan, cible AC-002, présente le plan (fichiers, API, tests nommés par leur AC, aucune dépendance), et s'arrête proprement après le plan : plugin-shell n'est pas dans la session, son test-engineer ne peut pas recevoir le mandat write-tests — ni branche, ni test, ni code écrit par lui-même.",
+  "tags": [
+    "create-feature",
+    "positive"
+  ],
+  "runs": 3,
+  "expected_outcome": "Le skill create-feature est invoqué ; aucun fichier sous bin/, tests/, tools/ ou docs/ n'est écrit, aucune branche créée, aucun commit ; le checkpoint est tenu par orch.sh checkpoint ; la réponse cite AC-002, présente le plan et dit que plugin-shell (son test-engineer) est absent de la session, nomme ce plugin comme ce qui manque et explique comment continuer, sans rien implémenter.",
+  "context": {
+    "scaffold_script": "setup.sh"
+  },
+  "execution": {
+    "prompt": "implémente AC-002",
+    "max_turns": 16,
+    "allowed_tools": [
+      "Skill",
+      "Read",
+      "Glob",
+      "Grep",
+      "Bash"
+    ]
+  },
+  "graders": [
+    {
+      "name": "skill-fired",
+      "type": "tool_used",
+      "tool": "Skill",
+      "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?create-feature\""
+    },
+    {
+      "name": "no-code-edit",
+      "type": "tool_used",
+      "tool": "Edit",
+      "input_match": "\"file_path\"\\s*:\\s*\"[^\"]*(bin|tests|tools|docs)/",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "name": "no-code-write",
+      "type": "tool_used",
+      "tool": "Write",
+      "input_match": "\"file_path\"\\s*:\\s*\"[^\"]*(bin|tests|tools|docs)/",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "name": "no-write-through-bash",
+      "type": "tool_used",
+      "tool": "Bash",
+      "input_match": "sed -i|python3|perl -i|tee\\s+(\\./)?(bin|tests|tools|docs|deps)|>\\s*(\\./)?(bin|tests|tools|docs)/|>\\s*(\\./)?deps\\.|add-dep\\.sh",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "name": "no-branch-nor-commit",
+      "type": "tool_used",
+      "tool": "Bash",
+      "input_match": "git (switch -c|checkout -b|commit|stash|add|merge|push)",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "name": "no-self-approval",
+      "type": "tool_used",
+      "tool": "Bash",
+      "input_match": "orch\\.sh approve",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "name": "checkpoint-recorded-by-orch",
+      "type": "tool_used",
+      "tool": "Bash",
+      "input_match": "orch\\.sh checkpoint",
+      "min": 1
+    },
+    {
+      "name": "targets-ac-002",
+      "type": "regex",
+      "target": "last_message",
+      "pattern": "AC-002"
+    },
+    {
+      "name": "names-the-missing-plugin",
+      "type": "regex",
+      "target": "last_message",
+      "pattern": "plugin-shell"
+    },
+    {
+      "name": "plans-then-stops-on-the-missing-plugin",
+      "type": "llm",
+      "criteria": "PASS if the reply shows that the repository state and the project documents were checked (the PRD and the TRD of the part are APPROVED, AC-002 is the targeted criterion, the plan entry for AC-002 was read), presents a plan for AC-002 (files touched, the public API `notes list --offline`, the planned test named with its AC id, no new dependency), says that the part's language plugin plugin-shell is not available in this session so its test-engineer cannot be mandated to write the failing tests, names plugin-shell as what is missing and how to go on (install or enable it, then a new session), and writes no code, no test and creates no branch. Reading files and running read-only git commands, and recording the plan and the blocker in .forge/checkpoint.md through the orchestrator's script, are fine.\nFAIL if it implements `list --offline` in bin/notes, writes a test itself, creates the branch, commits, approves a document, or goes on as if the language plugin were present.\n"
+    }
+  ]
+}

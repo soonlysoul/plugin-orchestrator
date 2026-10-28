@@ -1,0 +1,91 @@
+{
+  "schema_version": "1.0",
+  "name": "create-feature-new-ac-validation-point",
+  "description": "Demande de Soon, telle qu'il la tape (US-3) : ajouter une commande `notes count` dans un projet .forge/ dont le PRD approuvé ne couvre que AC-001 et AC-002 ; la demande ne correspond à aucun critère, le skill propose un nouveau critère numéroté AC-003, présente le plan et en fait un point de validation (changement de périmètre) : il demande l'accord et s'arrête sans écrire le PRD, sans code, sans branche.",
+  "tags": [
+    "create-feature",
+    "positive"
+  ],
+  "runs": 3,
+  "expected_outcome": "Le skill create-feature est invoqué ; aucun fichier sous bin/, tests/, tools/ ou docs/ n'est écrit, aucune branche créée, aucun commit ; le checkpoint est tenu par orch.sh checkpoint ; la réponse propose AC-003 (un critère numéroté, testable, pour `notes count`), présente le plan, demande la validation du changement de périmètre et attend.",
+  "context": {
+    "scaffold_script": "setup.sh"
+  },
+  "execution": {
+    "prompt": "ajoute une commande notes count qui affiche le nombre de notes",
+    "max_turns": 16,
+    "allowed_tools": [
+      "Skill",
+      "Read",
+      "Glob",
+      "Grep",
+      "Bash"
+    ]
+  },
+  "graders": [
+    {
+      "name": "skill-fired",
+      "type": "tool_used",
+      "tool": "Skill",
+      "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?create-feature\""
+    },
+    {
+      "name": "no-code-edit",
+      "type": "tool_used",
+      "tool": "Edit",
+      "input_match": "\"file_path\"\\s*:\\s*\"[^\"]*(bin|tests|tools|docs)/",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "name": "no-code-write",
+      "type": "tool_used",
+      "tool": "Write",
+      "input_match": "\"file_path\"\\s*:\\s*\"[^\"]*(bin|tests|tools|docs)/",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "name": "no-write-through-bash",
+      "type": "tool_used",
+      "tool": "Bash",
+      "input_match": "sed -i|python3|perl -i|tee\\s+(\\./)?(bin|tests|tools|docs|deps)|>\\s*(\\./)?(bin|tests|tools|docs)/|>\\s*(\\./)?deps\\.|add-dep\\.sh",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "name": "no-branch-nor-commit",
+      "type": "tool_used",
+      "tool": "Bash",
+      "input_match": "git (switch -c|checkout -b|commit|stash|add|merge|push)",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "name": "no-self-approval",
+      "type": "tool_used",
+      "tool": "Bash",
+      "input_match": "orch\\.sh approve",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "name": "checkpoint-recorded-by-orch",
+      "type": "tool_used",
+      "tool": "Bash",
+      "input_match": "orch\\.sh checkpoint",
+      "min": 1
+    },
+    {
+      "name": "proposes-ac-003",
+      "type": "regex",
+      "target": "last_message",
+      "pattern": "AC-003"
+    },
+    {
+      "name": "asks-validation-before-anything",
+      "type": "llm",
+      "criteria": "PASS if the reply says that `notes count` matches no acceptance criterion of the approved PRD (AC-001 add and list, AC-002 offline list), proposes a new numbered criterion AC-003 for it, written as a testable behaviour (given notes were added, `notes count` prints their number), presents the plan (the file bin/notes, a test named after AC-003 under tests/, no new dependency), treats it as a scope change that the user must validate before anything is written — the PRD included — and stops, asking for that validation. Reading files and running read-only git commands, and recording the plan in .forge/checkpoint.md through the orchestrator's script, are fine.\nFAIL if it implements `notes count`, writes a test, writes AC-003 into docs/product/PRD.md before the user validates it, creates a branch, commits, or presents the request as already covered by an existing criterion.\n"
+    }
+  ]
+}

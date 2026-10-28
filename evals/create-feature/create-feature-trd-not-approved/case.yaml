@@ -1,0 +1,98 @@
+{
+  "schema_version": "1.0",
+  "name": "create-feature-trd-not-approved",
+  "description": "Demande de Soon, telle qu'il la tape (US-3) : attaquer AC-002 dans un projet .forge/ dont le PRD est APPROVED mais dont le TRD de la partie est resté en DRAFT ; aucun code applicatif n'est écrit avant que le PRD et le TRD soient approuvés : le skill s'arrête à l'étape contexte, dit que le TRD n'est pas approuvé, demande cette approbation et attend — sans l'approuver lui-même, sans branche, sans test, sans code.",
+  "tags": [
+    "create-feature",
+    "positive"
+  ],
+  "runs": 3,
+  "expected_outcome": "Le skill create-feature est invoqué ; aucun fichier sous bin/, tests/, tools/ ou docs/ n'est écrit, aucune branche créée, aucun commit, aucun orch.sh approve ; le checkpoint est tenu par orch.sh checkpoint ; la réponse dit que docs/technical/TRD.md est en DRAFT (pas APPROVED), que rien n'est développé avant son approbation, et demande à l'utilisateur de l'approuver ou de dire ce qui doit changer.",
+  "context": {
+    "scaffold_script": "setup.sh"
+  },
+  "execution": {
+    "prompt": "on attaque AC-002",
+    "max_turns": 12,
+    "allowed_tools": [
+      "Skill",
+      "Read",
+      "Glob",
+      "Grep",
+      "Bash"
+    ]
+  },
+  "graders": [
+    {
+      "name": "skill-fired",
+      "type": "tool_used",
+      "tool": "Skill",
+      "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?create-feature\""
+    },
+    {
+      "name": "no-code-edit",
+      "type": "tool_used",
+      "tool": "Edit",
+      "input_match": "\"file_path\"\\s*:\\s*\"[^\"]*(bin|tests|tools|docs)/",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "name": "no-code-write",
+      "type": "tool_used",
+      "tool": "Write",
+      "input_match": "\"file_path\"\\s*:\\s*\"[^\"]*(bin|tests|tools|docs)/",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "name": "no-write-through-bash",
+      "type": "tool_used",
+      "tool": "Bash",
+      "input_match": "sed -i|python3|perl -i|tee\\s+(\\./)?(bin|tests|tools|docs|deps)|>\\s*(\\./)?(bin|tests|tools|docs)/|>\\s*(\\./)?deps\\.|add-dep\\.sh",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "name": "no-branch-nor-commit",
+      "type": "tool_used",
+      "tool": "Bash",
+      "input_match": "git (switch -c|checkout -b|commit|stash|add|merge|push)",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "name": "no-self-approval",
+      "type": "tool_used",
+      "tool": "Bash",
+      "input_match": "orch\\.sh approve",
+      "min": 0,
+      "max": 0
+    },
+    {
+      "name": "checkpoint-recorded-by-orch",
+      "type": "tool_used",
+      "tool": "Bash",
+      "input_match": "orch\\.sh checkpoint",
+      "min": 1
+    },
+    {
+      "name": "names-the-trd",
+      "type": "regex",
+      "target": "last_message",
+      "pattern": "TRD"
+    },
+    {
+      "name": "asks-for-approval",
+      "type": "regex",
+      "target": "last_message",
+      "pattern": "approuv|approb|APPROVED",
+      "flags": "i"
+    },
+    {
+      "name": "stops-on-the-draft-trd",
+      "type": "llm",
+      "criteria": "PASS if the reply says that the TRD of the part (docs/technical/TRD.md) is DRAFT, not APPROVED, that no application code is written before the user approves it (the PRD is approved), asks the user to approve it or say what should change, and stops there: no plan carried out, no branch, no test, no code, and the document is not approved by Claude itself. Reading files, running read-only git commands and recording the blocker in .forge/checkpoint.md through the orchestrator's script are fine.\nFAIL if it implements `list --offline`, writes a test, creates a branch, commits, writes APPROVED into the TRD or runs the approval command itself, or goes on with the feature despite the DRAFT TRD.\n"
+    }
+  ]
+}

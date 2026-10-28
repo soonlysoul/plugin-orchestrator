@@ -1,0 +1,45 @@
+{
+  "schema_version": "1.0",
+  "name": "create-feature-tdd-question",
+  "description": "Question voisine que Soon tape, dans un projet .forge/ prêt pour une fonctionnalité : la différence entre le ROUGE et le VERT en TDD est une question sur la méthode, pas une fonctionnalité à développer.",
+  "tags": [
+    "create-feature",
+    "negative"
+  ],
+  "runs": 3,
+  "expected_outcome": "Le skill create-feature n'est pas invoqué ; la réponse explique le ROUGE (un test écrit d'abord, qui échoue pour la bonne raison) et le VERT (l'implémentation minimale qui le fait passer), sans lire les documents du projet pour planifier, sans proposer d'implémenter un critère ni lancer les tests.",
+  "context": {
+    "scaffold_script": "setup.sh"
+  },
+  "execution": {
+    "prompt": "c'est quoi la différence entre le ROUGE et le VERT en TDD ?",
+    "max_turns": 4,
+    "allowed_tools": [
+      "Skill",
+      "Read"
+    ]
+  },
+  "graders": [
+    {
+      "name": "skill-not-fired",
+      "type": "tool_used",
+      "tool": "Skill",
+      "input_match": "\"skill\"\\s*:\\s*\"(?:[\\w-]+:)?create-feature\"",
+      "min": 0,
+      "max": 0,
+      "arm": "both"
+    },
+    {
+      "name": "answers-about-red-and-green",
+      "type": "regex",
+      "target": "last_message",
+      "pattern": "rouge|red",
+      "flags": "i"
+    },
+    {
+      "name": "explains-without-starting-a-feature",
+      "type": "llm",
+      "criteria": "PASS if the reply explains the two steps of TDD: RED is a test written before the code, run and seen failing for the expected reason (it proves the test tests something), GREEN is the minimal implementation that makes that same test pass, after which one refactors and re-tests. Mentioning the project's conventions in one line is fine.\nFAIL if it starts a feature workflow, asks which acceptance criterion to implement, reads the PRD, the TRD or the plan to prepare a feature, proposes a plan or a branch, or runs or claims to run the tests.\n"
+    }
+  ]
+}
