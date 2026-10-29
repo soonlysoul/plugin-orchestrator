@@ -199,6 +199,60 @@ expect_line "l'autre skill a pris le checkpoint" "$cp" '^skill: debug-project$'
 run_orch checkpoint "$proj" frob
 expect_refused "action de checkpoint inconnue : usage"
 
+echo "# checkpoint : un blocage tient l'étape qu'il arrête, et se lève quand elle est faite"
+lift="$work/lift"
+mkdir -p "$lift"
+run_orch init "$lift"
+run_orch checkpoint "$lift" start --skill bootstrap-project --steps "Identity|Configuration|Documents|Report"
+liftcp="$lift/.forge/checkpoint.md"
+run_orch checkpoint "$lift" done 1 --command "validated: demo-notes" --exit 0
+run_orch checkpoint "$lift" block "write of .forge/config.yaml refused: the user saves it"
+expect_ok "block à l'étape 2 : exit 0"
+expect_line "le blocage nomme la première étape à faire" "$liftcp" '^- \[step 2\] write of \.forge/config\.yaml refused: the user saves it$'
+run_orch checkpoint "$lift" block "step 2: the toolchain lines are read back first"
+expect_line "« step 2: » en tête de la raison n'est pas doublé" "$liftcp" '^- \[step 2\] the toolchain lines are read back first$'
+run_orch checkpoint "$lift" done 2 --command "config saved by the user" --exit 0
+expect_ok "done 2 après deux blocages : exit 0"
+refuse_line "done 2 lève les blocages de l'étape 2" "$liftcp" '^- \[step 2\]'
+expect_line "plus aucun blocage : « - none »" "$liftcp" '^- none$'
+run_orch checkpoint "$lift" block "PRD question: what does a note hold?"
+run_orch checkpoint "$lift" done 4 --command "report given" --exit 0
+expect_line "done d'une autre étape garde le blocage de l'étape 3" "$liftcp" '^- \[step 3\] PRD question: what does a note hold\?$'
+run_orch checkpoint "$lift" done 3 --command "documents kept in DRAFT" --exit 0
+refuse_line "done 3 le lève" "$liftcp" 'PRD question'
+run_orch checkpoint "$lift" block "recovery: HEAD matches last_commit"
+expect_line "toutes les étapes faites : blocage sans étape" "$liftcp" '^- recovery: HEAD matches last_commit$'
+run_orch checkpoint "$lift" done 1 --command "validated again" --exit 0
+expect_line "un blocage sans étape reste après un done" "$liftcp" '^- recovery: HEAD matches last_commit$'
+lift12="$work/lift12"
+mkdir -p "$lift12/.forge"
+cat >"$lift12/.forge/checkpoint.md" <<'CP'
+# Checkpoint
+updated: 2026-10-29T19:00+01:00
+skill: create-feature
+feature: AC-001 list notes
+branch: feature/AC-001-list-notes
+last_commit: 4939a29
+
+## Steps
+- [ ] 1 Plan
+- [ ] 12 Quality
+
+## Test results
+| command | result | when |
+| --- | --- | --- |
+
+## Next action
+1 Plan
+
+## Blockers / open questions
+- [step 1] the plan waits for the user
+- [step 12] the analyzer is missing
+CP
+run_orch checkpoint "$lift12" done 1 --command "plan validated by the user" --exit 0
+refuse_line "done 1 lève [step 1]" "$lift12/.forge/checkpoint.md" 'the plan waits'
+expect_line "done 1 garde [step 12]" "$lift12/.forge/checkpoint.md" '^- \[step 12\] the analyzer is missing$'
+
 echo "# checkpoint : un checkpoint écrit à la main, au gabarit, se poursuit"
 hand="$work/hand"
 mkdir -p "$hand/.forge"

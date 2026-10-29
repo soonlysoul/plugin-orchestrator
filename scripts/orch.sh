@@ -8,8 +8,9 @@
 #                                  nor checkpoint.md (checkpoint start)
 #   checkpoint DIR start --skill S --steps "a|b|…" [--feature F] [--restart]
 #   checkpoint DIR done N --command C (--exit E | --carried) [--result R] [--next A]
-#   checkpoint DIR block REASON
-#   status DOC                     DRAFT, REVIEW or APPROVED
+#   checkpoint DIR block REASON    a blocker of the first step left to do, "[step N]", lifted by
+#                                  done N
+#   status DOC                    DRAFT, REVIEW or APPROVED
 #   approve DOC --quote MESSAGE    the user's explicit approval: the Status and Approved rows,
 #                                  the fingerprint in .forge/approvals.log that doc-status-guard
 #                                  compares
@@ -115,6 +116,14 @@ step_name() {
   printf '%s' "${text%% — \`*}"
 }
 
+# first_open: the number of the first step left to do, or nothing when every step is done.
+first_open() {
+  local step
+  for step in "${CP_STEPS[@]}"; do
+    [[ $step =~ ^-\ \[\ \]\ ([0-9]+)\  ]] && { printf '%s' "${BASH_REMATCH[1]}"; return; }
+  done
+}
+
 # default_next: the first step left to do, or that every step is done.
 default_next() {
   local step
@@ -191,6 +200,12 @@ cmd_checkpoint() {
         found=1
       done
       ((found)) || die "refusé : étape $number inconnue du checkpoint."
+      # The step is done: the blockers it held are lifted, the others stay.
+      local kept=() blocker
+      for blocker in "${CP_BLOCKERS[@]}"; do
+        [[ $blocker == "[step $number] "* ]] || kept+=("$blocker")
+      done
+      CP_BLOCKERS=("${kept[@]}")
       [[ -z $result ]] || CP_RESULTS+=("| \`$command\` | $result | $(date +%H:%M) |")
       CP_NEXT=${next:-$(default_next)}
       ;;
@@ -198,7 +213,17 @@ cmd_checkpoint() {
       [[ -n ${1:-} ]] || die "usage : orch.sh checkpoint DOSSIER block RAISON"
       [[ -f $file ]] || die "refusé : aucun checkpoint dans $dir (checkpoint start d'abord)."
       read_checkpoint "$file"
-      CP_BLOCKERS+=("$1")
+      # A blocker holds the first step left to do, named "[step N]", until "done N" lifts it; once
+      # every step is done it holds none and stays until the next start. A reason that already
+      # opens on "step N" loses it rather than say it twice.
+      local reason=$1 held pattern
+      held=$(first_open)
+      if [[ -n $held ]]; then
+        pattern="^[Ss]tep $held:? +(.+)$"
+        [[ $reason =~ $pattern ]] && reason=${BASH_REMATCH[1]}
+        reason="[step $held] $reason"
+      fi
+      CP_BLOCKERS+=("$reason")
       ;;
     *) die "usage : orch.sh checkpoint DOSSIER start|done|block …" ;;
   esac

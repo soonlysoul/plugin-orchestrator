@@ -7,6 +7,7 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) ; ve
 ### Corrigé
 
 - Mandat `scaffold` de `bootstrap-project` : le `.gitignore` racine qu'écrit l'outil de scaffold du langage (`flutter create .`) est permis — la consigne l'interdisait alors que l'étape 5 le complète ; le mandat nomme le dossier du projet ; un rapport `blocked` ou `partial` est lu d'abord, et un projet en sous-dossier que le plugin ne sait pas scaffolder est repris par une nouvelle session dans ce dossier. Trouvé en préparant plugin-flutter 1.0.
+- `orch.sh checkpoint` : un blocage ne se levait jamais — `block` l'ajoutait, rien ne le retirait, si bien qu'un checkpoint gardait « config refusée » ou « plan en attente » après l'étape faite, et que recover-session y lisait une contradiction. `block` le rattache désormais à la première étape à faire (`[step N] <raison>`, sans doubler un « step N: » déjà écrit) et `done N` lève les blocages de l'étape N, les autres restant ; un blocage posé quand tout est fait, comme une ligne écrite à la main, ne nomme aucune étape et reste jusqu'au `start` suivant. Trouvé par les scénarios 1 et 14 de plugin-flutter 1.0.
 
 ## [0.1.0] — 2026-10-29
 
