@@ -2,7 +2,7 @@
 
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) ; versionnage [SemVer](https://semver.org/lang/fr/) : correctif pour une consigne corrigée, mineure pour un composant ajouté, majeure pour un changement qui casse l'existant.
 
-## [0.1.0] — en cours
+## [0.1.0] — 2026-10-29
 
 ### Ajouté
 
@@ -27,3 +27,5 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) ; ve
 ### Modifié
 - Pointeurs vers `templates/` et `scripts/orch.sh` dans les composants existants, sans changement de comportement ni ré-évaluation (décision de Soon du 2026-10-27) : recover-session (format du checkpoint ; `orch.sh checkpoint … block` quand checkpoint-reminder réclame une mise à jour pendant la reprise), github-workflow (format du checkpoint, bloc `parts` du gabarit à montrer sur un schéma 1, règles de permission proposées), git-workflow (bloc `parts` du gabarit), product-architect (part du gabarit de PRD).
 - Seuil du coût permanent de `tests/run-all.sh` relevé de 1 000 à 2 000 tokens (alerte, jamais un échec) : mesuré par `claude plugin details`, le style maison des en-têtes de skill plafonne vers 250 tokens par skill et la v0.1 se projette vers 1 800 ; `tests/static/test_run_all.sh` ajusté, coûts mesurés consignés dans `docs/ARCHITECTURE.md`.
+
+Coût en contexte permanent : ~1897 tokens — github-workflow ~260, create-feature ~280, git-workflow ~270, debug-project ~290, recover-session ~300, bootstrap-project ~300, product-architect ~190.
