@@ -2,7 +2,27 @@
 
 Drives a software project from zero to delivery through project-level documents, shared Git, GitHub, TDD, recovery and debugging workflows, and multi-part coordination, delegating all language-specific work to the specialized plugins.
 
-Version **0.1.0**, en construction : la charpente est posée par plugin-plugin, aucun composant n'est encore livré. Le cadrage approuvé est dans [docs/PRD.md](docs/PRD.md) et [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) ; l'avancement, dans [PROGRESS.md](PROGRESS.md). Claude Code **2.1.295 ou plus** requis.
+Version **0.1.0** : les projets à une seule partie. Le découpage d'un projet en plusieurs parties et leur coordination (contrat d'API, lots, livraison) viendront en v0.2. Le cadrage approuvé est dans [docs/PRD.md](docs/PRD.md) et [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) ; l'avancement, dans [PROGRESS.md](PROGRESS.md). Claude Code **2.1.295 ou plus** requis.
+
+## Ce que fait le plugin
+
+Démarrer un projet, développer une fonctionnalité en TDD, committer proprement, publier sur GitHub, reprendre après une interruption, corriger une panne avec méthode — quel que soit le langage du projet : tout ce qui est propre à un langage est confié, par un mandat, au plugin de langage de la partie (plugin-flutter aujourd'hui).
+
+| Composant | Rôle |
+| --- | --- |
+| Skill `bootstrap-project` | Démarre un projet : identité et périmètre confirmés d'abord, Git, dossier `.forge/`, scaffold confié au plugin de langage, documents racine en DRAFT, règles de permission proposées, test de base vert, premier commit |
+| Skill `create-feature` | Une fonctionnalité en TDD strict : PRD et TRD approuvés lus d'abord, tests écrits par le test-engineer du plugin de langage, ROUGE puis VERT avec les commandes de la partie, revue indépendante, commit |
+| Skill `debug-project` | Reproduit une panne inattendue (test, analyse, build, CI), en prouve la cause racine avant tout correctif, écrit un test de non-régression ROUGE puis VERT, committe un correctif minimal |
+| Skill `git-workflow` | Branches nommées, ajout explicite des fichiers, commits Conventional Commits, push d'une branche de travail seulement si préautorisé, jamais de la branche par défaut |
+| Skill `github-workflow` | Dépôt distant, CI posée par le plugin de langage, pull request et suivi des checks, derrière des points de validation ; jamais de merge par Claude |
+| Skill `recover-session` | Reprend un travail interrompu depuis le disque (checkpoint, Git, état du dépôt), sans rien modifier avant votre accord |
+| Agent `product-architect` | PRD produit et critères d'acceptation numérotés `AC-xxx`, testables ; écrit seulement sous `docs/product/`, sans shell |
+| Hook `guard-destructive` | Bloque `git reset --hard`, `push --force`, `rm -rf` hors `build/`, `gh` qui supprime, merge ou publie une release, la publication sur un registre (pub.dev, npm, PyPI) sans `--dry-run` |
+| Hook `secret-scan` | Bloque un commit qui contient un fichier secret ou un motif de secret dans ses lignes ajoutées ; lance aussi gitleaks s'il est installé |
+| Hook `protect-sensitive` | Demande confirmation avant d'écrire un fichier de signature, des entitlements, un workflow de CI ou `.forge/config.yaml` |
+| Hook `doc-status-guard` | Repasse en REVIEW un document projet approuvé dont le contenu a changé depuis son approbation |
+| Hook `agent-scope-guard` | Impose à chaque agent du plugin ses dossiers d'écriture et sa liste de commandes |
+| Hook `checkpoint-reminder` | Rappelle une fois de mettre à jour `.forge/checkpoint.md` quand il est périmé |
 
 ## Essai local
 
