@@ -6,7 +6,7 @@ Version **0.1.0** : les projets à une seule partie. Le découpage d'un projet e
 
 ## Ce que fait le plugin
 
-Démarrer un projet, développer une fonctionnalité en TDD, committer proprement, publier sur GitHub, reprendre après une interruption, corriger une panne avec méthode — quel que soit le langage du projet : tout ce qui est propre à un langage est confié, par un mandat, au plugin de langage de la partie (plugin-flutter aujourd'hui).
+Démarrer un projet, développer une fonctionnalité en TDD, committer proprement, publier sur GitHub, reprendre après une interruption, corriger une panne avec méthode — quel que soit le langage du projet : tout ce qui est propre à un langage est confié, par un mandat, au plugin de langage de la partie (plugin-flutter, à partir de sa prochaine version majeure).
 
 | Composant | Rôle |
 | --- | --- |
@@ -23,6 +23,23 @@ Démarrer un projet, développer une fonctionnalité en TDD, committer propremen
 | Hook `doc-status-guard` | Repasse en REVIEW un document projet approuvé dont le contenu a changé depuis son approbation |
 | Hook `agent-scope-guard` | Impose à chaque agent du plugin ses dossiers d'écriture et sa liste de commandes |
 | Hook `checkpoint-reminder` | Rappelle une fois de mettre à jour `.forge/checkpoint.md` quand il est périmé |
+
+## Installer
+
+Prérequis : Claude Code ≥ 2.1.295, `git`, `jq`, et le plugin de langage de chaque partie du projet ; pour GitHub, `gh` connecté ; gitleaks recommandé.
+
+Sur chaque appareil, depuis la marketplace publique `soon` :
+
+```bash
+claude plugin marketplace add soonlysoul/claude-plugins
+claude plugin install plugin-orchestrator@soon --scope user
+```
+
+Sans clé SSH GitHub sur l'appareil, exportez d'abord `CLAUDE_CODE_PLUGIN_PREFER_HTTPS=1`.
+
+Puis ouvrez Claude Code dans le dossier du projet — un dossier vide pour un nouveau projet — et lancez `/plugin-orchestrator:bootstrap-project`. Le dossier où la session est lancée sert de racine du projet aux hooks et aux règles de permission.
+
+**Avec plugin-flutter 0.x.** Le travail propre à un langage passe par des mandats à l'interface 1, que plugin-flutter ne connaîtra qu'à sa prochaine version majeure. D'ici là, les workflows de l'orchestrateur s'arrêtent avant de lui confier quoi que ce soit, en demandant sa mise à jour, et les hooks communs aux deux plugins tournent en double : mêmes blocages, en plus lent.
 
 ## Essai local
 
