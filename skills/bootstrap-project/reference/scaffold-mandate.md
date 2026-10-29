@@ -1,6 +1,6 @@
 # The scaffold mandate
 
-What bootstrap-project sends to the language plugin of a part, and what it needs back, at interface 1 of the delegation contract. The orchestrator writes no application code: the skeleton of a part, its base test, its TRD, its CI template and its permission fragment are the plugin's; the orchestrator keeps the root — `.forge/`, `docs/product/`, `docs/engineering/`, `CLAUDE.md`, `.gitignore` — and the first commit.
+What bootstrap-project sends to the language plugin of a part, and what it needs back, at interface 1 of the delegation contract. The orchestrator writes no application code: the skeleton of a part, its base test, its TRD, its CI template and its permission fragment are the plugin's; the orchestrator keeps the root — `.forge/`, `docs/product/`, `docs/engineering/`, `CLAUDE.md`, the secret patterns of `.gitignore` — and the first commit.
 
 ## Mandate, given as the agent's task
 
@@ -10,13 +10,15 @@ task: scaffold
 part:
   path: .
   plugin: <plugin>
+directory: <the project directory, relative to the session root; . for the current one>
 project: <project name>
 identifiers: <what the user validated: package name, organization, application id…>
 targets: <platforms or targets the user validated>
 scope: <the validated scope, one paragraph>
 user language: <language>
 constraints:
-- the skeleton and its base test go under the part's path; nothing under .forge/, docs/product/, docs/engineering/, CLAUDE.md or .gitignore at the root
+- the skeleton and its base test go under the part's path; nothing under .forge/, docs/product/, docs/engineering/ or CLAUDE.md at the root
+- a root .gitignore only as the scaffold tool of the language writes it (flutter create does); bootstrap-project appends its secret patterns afterwards
 - the part's TRD at <path>/docs/technical/TRD.md, in DRAFT, with the plugin's own header
 - the permission fragment is returned in the report, never written to .claude/settings.json
 - no commit, no push, no remote: the first commit is the orchestrator's
@@ -27,7 +29,7 @@ constraints:
 
 ```
 SCAFFOLD:
-- <what was created: skeleton, base test, TRD, CI template, with their paths>
+- <what was created: skeleton, base test, TRD, and a CI template when the plugin writes one at scaffold, with their paths>
 TOOLCHAIN:
 - test: <command>
 - format: <command>
@@ -57,7 +59,8 @@ OPEN_QUESTIONS:
 ## What the session checks before using it
 
 - `INTERFACE: 1` present. Without it, the plugin is a pre-migration version: stop, name the plugin and the version it needs.
-- `FILES_CHANGED` against `git status --porcelain --untracked-files=all`: nothing outside the part's path, except what the mandate allowed.
+- `STATUS: blocked` or `partial`: the reason is read before anything else. A plugin that scaffolds only the session root — plugin-flutter 1.0 — blocks on a project in a subdirectory: the bootstrap stays at this step, and a new session started in that directory resumes it with recover-session.
+- `FILES_CHANGED` against `git status --porcelain --untracked-files=all`: nothing outside the part's path, except what the mandate allowed; the root `.gitignore` written by the scaffold tool is allowed, and step 5 appends to it.
 - The `TOOLCHAIN` lines are plain commands: they go into `.forge/config.yaml` as they are, and `platforms` only when the report gives one.
 - A target is built only with its command and exit code in `COMMANDS_RUN`; otherwise it is enabled, not built.
 - The `PERMISSIONS` rules are of the forms `Bash(…)`, `Read(…)` or `Edit(…)`, and none of `allow` covers a push, a merge, a reset, a clean or a deletion: a rule that does is dropped from the proposal and reported.
