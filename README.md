@@ -2,7 +2,7 @@
 
 Drives a software project from zero to delivery through project-level documents, shared Git, GitHub, TDD, recovery and debugging workflows, and multi-part coordination, delegating all language-specific work to the specialized plugins.
 
-Version **0.1.0** : les projets à une seule partie. Le découpage d'un projet en plusieurs parties et leur coordination (contrat d'API, lots, livraison) viendront en v0.2. Le cadrage approuvé est dans [docs/PRD.md](docs/PRD.md) et [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) ; l'avancement, dans [PROGRESS.md](PROGRESS.md). Claude Code **2.1.295 ou plus** requis.
+Version **0.1.1** : les projets à une seule partie. Le découpage d'un projet en plusieurs parties et leur coordination (contrat d'API, lots, livraison) viendront en v0.2. Le cadrage approuvé est dans [docs/PRD.md](docs/PRD.md) et [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) ; l'avancement, dans [PROGRESS.md](PROGRESS.md). Claude Code **2.1.295 ou plus** requis.
 
 ## Ce que fait le plugin
 
